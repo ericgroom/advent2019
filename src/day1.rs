@@ -1,14 +1,15 @@
-use std::fs;
 use anyhow::Result;
+use std::fs;
 
 fn total_fuel_required(modules: Vec<i32>) -> i64 {
-    modules.iter().map(|mass| { fuel_required(*mass) as i64 }).sum()
+    modules.iter().map(|mass| fuel_required(*mass) as i64).sum()
 }
 
 fn total_fuel_required_with_fuel_cost(modules: Vec<i32>) -> i64 {
-    modules.iter()
-        .map(|mass| { fuel_required(*mass) as i64 })
-        .map(|fuel| { fuel + calculate_fuel_cost(fuel) })
+    modules
+        .iter()
+        .map(|mass| fuel_required(*mass) as i64)
+        .map(|fuel| fuel + calculate_fuel_cost(fuel))
         .sum()
 }
 
@@ -26,7 +27,10 @@ pub fn fuel_required(mass: i32) -> i32 {
 
 fn get_test_input() -> Result<Vec<i32>> {
     let input = fs::read_to_string("./src/day1_input.txt")?;
-    Ok(input.split('\n').filter_map(|word| { word.parse::<i32>().ok() }).collect())
+    Ok(input
+        .split('\n')
+        .filter_map(|word| word.parse::<i32>().ok())
+        .collect())
 }
 
 pub fn get_test_result() -> Result<i64> {
@@ -61,8 +65,8 @@ mod tests {
     #[test]
     fn test_calculate_fuel_cost() {
         assert_eq!(calculate_fuel_cost(2), 0);
-        assert_eq!(calculate_fuel_cost(654), 966-654);
-        assert_eq!(calculate_fuel_cost(33583), 50346-33583);
+        assert_eq!(calculate_fuel_cost(654), 966 - 654);
+        assert_eq!(calculate_fuel_cost(33583), 50346 - 33583);
     }
 
     #[test]
