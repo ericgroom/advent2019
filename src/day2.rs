@@ -40,6 +40,27 @@ pub fn restore_gravity_assist() -> Result<i32> {
     Ok(result[0])
 }
 
+pub fn find_noun_and_verb() -> Result<(i32, i32)> {
+    let input = read_input()?;
+    let target = 19690720;
+    for noun in 0..=99 {
+        for verb in 0..=99 {
+            let mut memory = input.clone();
+            memory[1] = noun;
+            memory[2] = verb;
+            if run_computation(memory)[0] == target {
+                return Ok((noun, verb));
+            }
+        }
+    }
+    Ok((-1, -1))
+}
+
+pub fn noun_and_verb_result() -> Result<i32> {
+    let (noun, verb) = find_noun_and_verb()?;
+    Ok(100 * noun + verb)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -66,6 +87,12 @@ mod tests {
     #[test]
     fn test_restore_gravity_assist_answer() -> Result<()> {
         assert_eq!(restore_gravity_assist()?, 5305097);
+        Ok(())
+    }
+
+    #[test]
+    fn test_noun_verb_answer() -> Result<()> {
+        assert_eq!(noun_and_verb_result()?, 4925);
         Ok(())
     }
 }

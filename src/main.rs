@@ -13,5 +13,9 @@ fn main() -> Result<()> {
         "Restore gravity assist: {}",
         day2::restore_gravity_assist()?
     );
+    println!(
+        "Result of 100 * noun + verb: {}",
+        day2::noun_and_verb_result()?
+    );
     Ok(())
 }
