@@ -9,5 +9,9 @@ fn main() -> Result<()> {
         "Day 1 fuel required with fuel cost: {}",
         day1::get_test_result_with_fuel_cost()?
     );
+    println!(
+        "Restore gravity assist: {}",
+        day2::restore_gravity_assist()?
+    );
     Ok(())
 }

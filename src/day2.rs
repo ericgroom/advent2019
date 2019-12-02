@@ -1,4 +1,7 @@
-fn run_computation(input: Vec<i32>) -> Vec<i32> {
+use anyhow::Result;
+use std::fs;
+
+pub fn run_computation(input: Vec<i32>) -> Vec<i32> {
     let mut result = input.clone();
     for current_index in (0..result.len()).into_iter().step_by(4) {
         match result[current_index] {
@@ -19,6 +22,22 @@ fn run_computation(input: Vec<i32>) -> Vec<i32> {
         }
     }
     return result;
+}
+
+fn read_input() -> Result<Vec<i32>> {
+    let input = fs::read_to_string("./src/day2_input.txt")?;
+    Ok(input
+        .split(",")
+        .filter_map(|word| word.parse::<i32>().ok())
+        .collect())
+}
+
+pub fn restore_gravity_assist() -> Result<i32> {
+    let mut input = read_input()?;
+    input[1] = 12;
+    input[2] = 2;
+    let result = run_computation(input);
+    Ok(result[0])
 }
 
 #[cfg(test)]
@@ -42,5 +61,11 @@ mod tests {
             run_computation(vec![1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50]),
             vec![3500, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50]
         );
+    }
+
+    #[test]
+    fn test_restore_gravity_assist_answer() -> Result<()> {
+        assert_eq!(restore_gravity_assist()?, 5305097);
+        Ok(())
     }
 }
