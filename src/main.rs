@@ -1,6 +1,7 @@
 mod day1;
 mod day2;
 mod day3;
+mod day4;
 
 use anyhow::Result;
 
@@ -25,6 +26,10 @@ fn main() -> Result<()> {
     println!(
         "Minimal delay intersection at {} units from central node",
         day3::minimal_delay_intersection()?
+    );
+    println!(
+        "Number of valid passwords between 138307-654504: {}",
+        day4::valid_passwords_in_input()
     );
     Ok(())
 }
