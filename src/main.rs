@@ -22,5 +22,9 @@ fn main() -> Result<()> {
         "Closest intersection at {} units from central node",
         day3::closest_intersection()?
     );
+    println!(
+        "Minimal delay intersection at {} units from central node",
+        day3::minimal_delay_intersection()?
+    );
     Ok(())
 }
