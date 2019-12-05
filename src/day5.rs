@@ -28,7 +28,29 @@ impl<'a> IntCodeComputer<'a> {
 
 impl<'a> Computer<i32> for IntCodeComputer<'a> {
     fn execute(&self) -> Vec<i32> {
-        return self.memory.borrow().clone();
+        let memory = self.memory.borrow();
+        while self.instruction_ptr < memory.len() {
+            let instruction = Instruction::read(&memory);
+            match instruction.operation {
+                Operation::Add => {
+                    if let Pointer(storage_index) = instruction.parameters[0] {
+                        let operand1 = resolve_value_in_memory(instruction.parameters[1], &memory);
+                        let operand2 = resolve_value_in_memory(instruction.parameters[2], &memory);
+                        memory[storage_index] = operand1 + operand2
+                    } else {
+                        panic!("attempting to store arithmetic operation result to value");
+                    }
+                }
+            }
+        }
+        vec![]
+    }
+}
+
+fn resolve_value_in_memory(parameter: Parameter, memory: &Vec<i32>) -> i32 {
+    match parameter {
+        Parameter::Value(value) => value,
+        Parameter::Pointer(index) => memory[index],
     }
 }
 
@@ -108,7 +130,7 @@ fn process_opcode(opcode: &i32) -> (Operation, Vec<ParameterMode>) {
 }
 
 impl Instruction {
-    fn read(memory: Vec<i32>) -> Instruction {
+    fn read(memory: &Vec<i32>) -> Instruction {
         let mut iter = memory.iter();
         let opcode = iter.next().expect("Cannot read from empty memory");
         let (operation, parameter_modes) = process_opcode(&opcode);
