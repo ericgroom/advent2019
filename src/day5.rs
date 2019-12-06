@@ -43,10 +43,7 @@ impl<'a> Computer<i32> for IntCodeComputer<'a> {
                 let memory = self.memory.borrow();
                 Instruction::read(&memory, &self.instruction_ptr.get())
             };
-            let should_continue = self.execute_instruction(instruction);
-            if !should_continue {
-                break;
-            }
+            self.execute_instruction(instruction);
         }
         let mut result = Vec::<i32>::new();
         std::mem::swap(&mut result, &mut self.memory.borrow_mut());
@@ -55,26 +52,14 @@ impl<'a> Computer<i32> for IntCodeComputer<'a> {
 }
 
 impl<'a> IntCodeComputer<'a> {
-    fn execute_instruction(&self, instruction: Instruction) -> bool {
+    fn execute_instruction(&self, instruction: Instruction) {
         let mut memory = self.memory.borrow_mut();
         match instruction.operation {
             Operation::Add => {
-                if let Parameter::Pointer(storage_index) = instruction.parameters[2] {
-                    let operand1 = resolve_value_in_memory(instruction.parameters[0], &memory);
-                    let operand2 = resolve_value_in_memory(instruction.parameters[1], &memory);
-                    memory[storage_index] = operand1 + operand2
-                } else {
-                    panic!("attempting to store arithmetic operation result to value");
-                }
+                arithmetic_operation(&instruction, &mut memory, Box::new(|x, y| x + y));
             }
             Operation::Multiply => {
-                if let Parameter::Pointer(storage_index) = instruction.parameters[2] {
-                    let operand1 = resolve_value_in_memory(instruction.parameters[0], &memory);
-                    let operand2 = resolve_value_in_memory(instruction.parameters[1], &memory);
-                    memory[storage_index] = operand1 * operand2
-                } else {
-                    panic!("attempting to store arithmetic operation result to value");
-                }
+                arithmetic_operation(&instruction, &mut memory, Box::new(|x, y| x * y));
             }
             Operation::Input => {
                 let input_result = (self.input_callback)();
@@ -92,40 +77,52 @@ impl<'a> IntCodeComputer<'a> {
                 if resolve_value_in_memory(instruction.parameters[0], &memory) != 0 {
                     let jump_address = resolve_value_in_memory(instruction.parameters[1], &memory);
                     self.instruction_ptr.replace(jump_address as usize);
-                    return true;
+                    return;
                 }
             }
             Operation::JumpIfFalse => {
                 if resolve_value_in_memory(instruction.parameters[0], &memory) == 0 {
                     let jump_address = resolve_value_in_memory(instruction.parameters[1], &memory);
                     self.instruction_ptr.replace(jump_address as usize);
-                    return true;
+                    return;
                 }
             }
             Operation::LessThan => {
-                if let Parameter::Pointer(storage_index) = instruction.parameters[2] {
-                    let operand1 = resolve_value_in_memory(instruction.parameters[0], &memory);
-                    let operand2 = resolve_value_in_memory(instruction.parameters[1], &memory);
-                    memory[storage_index] = if operand1 < operand2 { 1 } else { 0 };
-                } else {
-                    panic!("attempting to store arithmetic operation result to value");
-                }
+                arithmetic_operation(
+                    &instruction,
+                    &mut memory,
+                    Box::new(|x, y| if x < y { 1 } else { 0 }),
+                );
             }
             Operation::Equals => {
-                if let Parameter::Pointer(storage_index) = instruction.parameters[2] {
-                    let operand1 = resolve_value_in_memory(instruction.parameters[0], &memory);
-                    let operand2 = resolve_value_in_memory(instruction.parameters[1], &memory);
-                    memory[storage_index] = if operand1 == operand2 { 1 } else { 0 };
-                } else {
-                    panic!("attempting to store arithmetic operation result to value");
-                }
+                arithmetic_operation(
+                    &instruction,
+                    &mut memory,
+                    Box::new(|x, y| if x == y { 1 } else { 0 }),
+                );
             }
-            Operation::Halt => return false,
+            Operation::Halt => {
+                self.instruction_ptr.replace(memory.len());
+                return;
+            }
         }
         let old_ptr = self.instruction_ptr.get();
         let new_ptr = instruction.operation.parameter_count() + 1 + (old_ptr as i32);
         self.instruction_ptr.replace(new_ptr as usize);
-        return true;
+    }
+}
+
+fn arithmetic_operation(
+    instruction: &Instruction,
+    memory: &mut Vec<i32>,
+    transform: Box<dyn FnOnce(i32, i32) -> i32>,
+) {
+    if let Parameter::Pointer(storage_index) = instruction.parameters[2] {
+        let operand1 = resolve_value_in_memory(instruction.parameters[0], &memory);
+        let operand2 = resolve_value_in_memory(instruction.parameters[1], &memory);
+        memory[storage_index] = transform(operand1, operand2);
+    } else {
+        panic!("attempting to store arithmetic operation result to value");
     }
 }
 
