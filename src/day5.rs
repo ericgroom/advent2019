@@ -142,15 +142,6 @@ enum Parameter {
     Pointer(usize),
 }
 
-impl Parameter {
-    fn get_raw_value(&self) -> i32 {
-        match self {
-            Self::Value(value) => *value,
-            Self::Pointer(value) => *value as i32,
-        }
-    }
-}
-
 #[derive(Clone, Copy, PartialEq, Debug)]
 enum ParameterMode {
     Value,
@@ -278,7 +269,7 @@ pub fn run_diagnostic() -> Result<i32> {
         .expect("Computer should have outputted a diagnostic value"))
 }
 
-pub fn run_TEST_diagnostic() -> Result<i32> {
+pub fn run_test_diagnostic() -> Result<i32> {
     let input = read_input()?;
     let input_instr_provider = || 5;
     let output_container = Cell::new(None);
@@ -503,7 +494,7 @@ mod tests {
 
     #[test]
     fn test_correct_answer_part_2() -> Result<()> {
-        assert_eq!(run_TEST_diagnostic()?, 4283952);
+        assert_eq!(run_test_diagnostic()?, 4283952);
         Ok(())
     }
 }
