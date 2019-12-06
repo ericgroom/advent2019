@@ -1,4 +1,8 @@
+extern crate anyhow;
+
+use anyhow::Result;
 use std::cell::{Cell, RefCell};
+use std::fs::read_to_string;
 
 trait Computer<MemoryType> {
     fn execute(&self) -> Vec<MemoryType>;
@@ -34,16 +38,10 @@ impl<'a> Computer<i32> for IntCodeComputer<'a> {
                 let memory = self.memory.borrow();
                 Instruction::read(&memory, &self.instruction_ptr.get())
             };
-            println!(
-                "Processing instruction: {:?} at {}",
-                instruction,
-                self.instruction_ptr.get()
-            );
             let should_continue = self.execute_instruction(instruction);
             if !should_continue {
                 break;
             }
-            println!("Advancing to {}", self.instruction_ptr.get());
         }
         let mut result = Vec::<i32>::new();
         std::mem::swap(&mut result, &mut self.memory.borrow_mut());
@@ -59,7 +57,6 @@ impl<'a> IntCodeComputer<'a> {
                 if let Parameter::Pointer(storage_index) = instruction.parameters[2] {
                     let operand1 = resolve_value_in_memory(instruction.parameters[0], &memory);
                     let operand2 = resolve_value_in_memory(instruction.parameters[1], &memory);
-                    println!("Storing {} + {} in {}", operand1, operand2, storage_index);
                     memory[storage_index] = operand1 + operand2
                 } else {
                     panic!("attempting to store arithmetic operation result to value");
@@ -165,7 +162,6 @@ struct Instruction {
 }
 
 fn process_opcode(opcode: &i32) -> (Operation, Vec<ParameterMode>) {
-    println!("processing opcode: {}", *opcode);
     let operation_int = opcode % 100;
     let operation = Operation::from(operation_int);
     let mut parameter_modes = Vec::new();
@@ -200,6 +196,28 @@ impl Instruction {
             parameters: parameters,
         }
     }
+}
+
+fn read_input() -> Result<Vec<i32>> {
+    let input = read_to_string("./src/day5_input.txt")?;
+    Ok(input
+        .split(",")
+        .filter_map(|word| word.parse::<i32>().ok())
+        .collect())
+}
+
+pub fn run_diagnostic() -> Result<i32> {
+    let input = read_input()?;
+    let input_instr_provider = || 1;
+    let output_container = Cell::new(None);
+    let output_callback = |num| {
+        output_container.replace(Some(num));
+    };
+    let computer = IntCodeComputer::new(input, &input_instr_provider, &output_callback);
+    computer.execute();
+    Ok(output_container
+        .take()
+        .expect("Computer should have outputted a diagnostic value"))
 }
 
 #[cfg(test)]
@@ -259,5 +277,39 @@ mod tests {
             .execute(),
             vec![3500, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50]
         );
+    }
+
+    #[test]
+    fn test_known_new_cases() {
+        let output = |_| {};
+        let input: Box<dyn Fn() -> i32> = Box::new(|| panic!("input should never be called!"));
+
+        assert_eq!(
+            IntCodeComputer::new(vec![1002, 4, 3, 4, 33], &input, &output).execute(),
+            vec![1002, 4, 3, 4, 99]
+        );
+
+        assert_eq!(
+            IntCodeComputer::new(vec![1101, 100, -1, 4, 0], &input, &output).execute(),
+            vec![1101, 100, -1, 4, 99]
+        );
+
+        let output_called_count = Cell::new(0);
+        let known_input = || 2;
+        let known_output = |num: i32| {
+            assert_eq!(num, 2);
+            output_called_count.replace(output_called_count.get() + 1);
+        };
+        assert_eq!(
+            IntCodeComputer::new(vec![3, 0, 4, 0, 99], &known_input, &known_output).execute(),
+            vec![2, 0, 4, 0, 99]
+        );
+        assert_eq!(output_called_count.take(), 1);
+    }
+
+    #[test]
+    fn test_correct_answer_part_1() -> Result<()> {
+        assert_eq!(run_diagnostic()?, 9938601);
+        Ok(())
     }
 }

@@ -36,5 +36,6 @@ fn main() -> Result<()> {
         "Number of valid passwords using restrictive matching between 138307-654504: {}",
         day4::valid_passwords_in_input_restrictive()
     );
+    println!("Diagnostic code: {}", day5::run_diagnostic()?);
     Ok(())
 }
