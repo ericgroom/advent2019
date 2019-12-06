@@ -37,5 +37,6 @@ fn main() -> Result<()> {
         day4::valid_passwords_in_input_restrictive()
     );
     println!("Diagnostic code: {}", day5::run_diagnostic()?);
+    println!("TEST Diagnostic code: {}", day5::run_TEST_diagnostic()?);
     Ok(())
 }
