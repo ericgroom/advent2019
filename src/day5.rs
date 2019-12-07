@@ -2,20 +2,12 @@ extern crate anyhow;
 
 use anyhow::Result;
 use std::cell::Cell;
-use std::fs::read_to_string;
 
 use crate::intcode_computer::{Computer, IntCodeComputer};
-
-fn read_input() -> Result<Vec<i32>> {
-    let input = read_to_string("./src/day5_input.txt")?;
-    Ok(input
-        .split(",")
-        .filter_map(|word| word.parse::<i32>().ok())
-        .collect())
-}
+use crate::utils::read::read_list_from_file;
 
 pub fn run_diagnostic() -> Result<i32> {
-    let input = read_input()?;
+    let input = read_list_from_file("./src/day5_input.txt", ",")?;
     let input_instr_provider = || 1;
     let output_container = Cell::new(None);
     let output_callback = |num| {
@@ -29,7 +21,7 @@ pub fn run_diagnostic() -> Result<i32> {
 }
 
 pub fn run_test_diagnostic() -> Result<i32> {
-    let input = read_input()?;
+    let input = read_list_from_file("./src/day5_input.txt", ",")?;
     let input_instr_provider = || 5;
     let output_container = Cell::new(None);
     let output_callback = |num| {

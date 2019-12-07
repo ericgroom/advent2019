@@ -1,6 +1,7 @@
 /// The code here is terrible, I went off on a tangent with an incorrect algorithm and didn't have time to clean it up, it works though
 extern crate anyhow;
 
+use crate::utils::read::read_list;
 use anyhow::*;
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
@@ -139,17 +140,7 @@ fn read_input(input: &str) -> (Vec<Movement>, Vec<Movement>) {
     let mut input_iter = input.split('\n');
     let wire1_str = input_iter.next().expect("no input for wire1");
     let wire2_str = input_iter.next().expect("no input for wire2");
-    let wire1_movements: Vec<Movement> = wire1_str
-        .split(',')
-        .map(Movement::from_str)
-        .filter_map(std::result::Result::ok)
-        .collect();
-    let wire2_movements: Vec<Movement> = wire2_str
-        .split(',')
-        .map(Movement::from_str)
-        .filter_map(std::result::Result::ok)
-        .collect();
-    (wire1_movements, wire2_movements)
+    (read_list(wire1_str, ","), read_list(wire2_str, ","))
 }
 
 pub fn closest_intersection() -> Result<i32> {

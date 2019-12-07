@@ -1,7 +1,7 @@
 use anyhow::Result;
-use std::fs;
 
 use crate::intcode_computer::{Computer, IntCodeComputer};
+use crate::utils::read::read_list_from_file;
 
 pub fn run_computation(input: Vec<i32>) -> Vec<i32> {
     let computer = IntCodeComputer::new(input, &|| panic!("input not implemented"), &|_| {
@@ -10,16 +10,8 @@ pub fn run_computation(input: Vec<i32>) -> Vec<i32> {
     computer.execute()
 }
 
-fn read_input() -> Result<Vec<i32>> {
-    let input = fs::read_to_string("./src/day2_input.txt")?;
-    Ok(input
-        .split(",")
-        .filter_map(|word| word.parse::<i32>().ok())
-        .collect())
-}
-
 pub fn restore_gravity_assist() -> Result<i32> {
-    let mut input = read_input()?;
+    let mut input = read_list_from_file("./src/day2_input.txt", ",")?;
     input[1] = 12;
     input[2] = 2;
     let result = run_computation(input);
@@ -27,7 +19,7 @@ pub fn restore_gravity_assist() -> Result<i32> {
 }
 
 pub fn find_noun_and_verb() -> Result<(i32, i32)> {
-    let input = read_input()?;
+    let input = read_list_from_file("./src/day2_input.txt", ",")?;
     let target = 19690720;
     for noun in 0..=99 {
         for verb in 0..=99 {

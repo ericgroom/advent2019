@@ -1,5 +1,5 @@
+use crate::utils::read::read_list_from_file;
 use anyhow::Result;
-use std::fs;
 
 fn total_fuel_required(modules: Vec<i32>) -> i64 {
     modules.iter().map(|mass| fuel_required(*mass) as i64).sum()
@@ -26,11 +26,7 @@ pub fn fuel_required(mass: i32) -> i32 {
 }
 
 fn get_test_input() -> Result<Vec<i32>> {
-    let input = fs::read_to_string("./src/day1_input.txt")?;
-    Ok(input
-        .split('\n')
-        .filter_map(|word| word.parse::<i32>().ok())
-        .collect())
+    read_list_from_file("./src/day1_input.txt", "\n")
 }
 
 pub fn get_test_result() -> Result<i64> {
