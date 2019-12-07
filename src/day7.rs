@@ -1,5 +1,6 @@
 extern crate anyhow;
 
+use crate::intcode_computer::pipe::Pipe;
 use crate::intcode_computer::{Computer, IntCodeComputer};
 use crate::utils::read::read_list_from_file;
 use anyhow::Result;
@@ -11,19 +12,15 @@ fn get_amplifier_sequence_output(software: &Vec<i32>, phase_settings: &Vec<i32>)
     let input_signal = Cell::new(0);
     for phase_setting in phase_settings.iter().cloned() {
         let memory = software.clone();
-        let input_values = vec![phase_setting, input_signal.get()];
-        let input_index = Cell::new(0);
-        let input_callback = || {
-            let index = input_index.get();
-            let temp = input_values[index];
-            input_index.replace(index + 1);
-            return temp;
-        };
         let output_callback = |x| {
             input_signal.replace(x);
         };
-        let computer = IntCodeComputer::new(memory, &input_callback, &output_callback);
-        computer.execute();
+        let computer = IntCodeComputer::new(memory, &output_callback);
+        computer.provide_input(phase_setting);
+        computer.provide_input(input_signal.get());
+        while computer.execute() {
+            println!("interupted")
+        }
     }
     input_signal.get()
 }
@@ -59,6 +56,15 @@ pub fn find_max_amplitude(software: Vec<i32>, num_amps: i32) -> i32 {
 pub fn find_highest_thruster_signal() -> Result<i32> {
     let input = read_list_from_file("./src/day7_input.txt", ",")?;
     Ok(find_max_amplitude(input, 5))
+}
+
+fn find_max_looping(software: Vec<i32>, num_amps: i32) {
+    let phase_settings = get_permutations((0..num_amps).collect());
+    let pipe = Pipe::new();
+    // let first_computer = IntCodeComputer::new(software.clone(), &|| 0, &|x| pipe.output_handle(x));
+    // let second_computer = IntCodeComputer::new(software.clone(), &|| pipe.input_handle(), &|x| {
+    //     println!("{}", x)
+    // });
 }
 
 #[cfg(test)]

@@ -4,10 +4,9 @@ use crate::intcode_computer::{Computer, IntCodeComputer};
 use crate::utils::read::read_list_from_file;
 
 pub fn run_computation(input: Vec<i32>) -> Vec<i32> {
-    let computer = IntCodeComputer::new(input, &|| panic!("input not implemented"), &|_| {
-        panic!("output not implemented")
-    });
-    computer.execute()
+    let computer = IntCodeComputer::new(input, &|_| panic!("output not implemented"));
+    while computer.execute() {}
+    computer.memory.into_inner()
 }
 
 pub fn restore_gravity_assist() -> Result<i32> {

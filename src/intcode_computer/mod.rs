@@ -1,33 +1,48 @@
+mod instruction;
+mod operations;
+pub mod pipe;
+
+use instruction::*;
+use operations::*;
 use std::cell::{Cell, RefCell};
+use std::collections::VecDeque;
 
 pub trait Computer<MemoryType> {
-    fn execute(&self) -> Vec<MemoryType>;
+    /// returns false if the program has halted, if the value is true, there may be an interrupt
+    fn execute(&self) -> bool;
 }
 
 pub struct IntCodeComputer<'a> {
-    memory: RefCell<Vec<i32>>,
+    pub memory: RefCell<Vec<i32>>,
     instruction_ptr: Cell<usize>,
-    input_callback: &'a dyn Fn() -> i32,
+    input_buffer: RefCell<VecDeque<i32>>,
     output_callback: &'a dyn Fn(i32),
+    interupted: Cell<bool>,
 }
 
 impl<'a> IntCodeComputer<'a> {
-    pub fn new(
-        memory: Vec<i32>,
-        input: &'a dyn Fn() -> i32,
-        output: &'a dyn Fn(i32),
-    ) -> IntCodeComputer<'a> {
+    pub fn new(memory: Vec<i32>, output: &'a dyn Fn(i32)) -> IntCodeComputer<'a> {
         IntCodeComputer {
             memory: RefCell::new(memory),
             instruction_ptr: Cell::new(0),
-            input_callback: input,
+            input_buffer: RefCell::new(VecDeque::new()),
             output_callback: output,
+            interupted: Cell::new(false),
         }
+    }
+
+    pub fn provide_input(&self, input: i32) {
+        self.input_buffer.borrow_mut().push_back(input);
+    }
+
+    pub fn terminate(self) -> Vec<i32> {
+        self.memory.into_inner()
     }
 }
 
 impl<'a> Computer<i32> for IntCodeComputer<'a> {
-    fn execute(&self) -> Vec<i32> {
+    fn execute(&self) -> bool {
+        println!("starting execution at {}", self.instruction_ptr.get());
         let memory_len = self.memory.borrow().len();
         while self.instruction_ptr.get() < memory_len {
             // println!(
@@ -39,16 +54,18 @@ impl<'a> Computer<i32> for IntCodeComputer<'a> {
                 let memory = self.memory.borrow();
                 Instruction::read(&memory, &self.instruction_ptr.get())
             };
-            self.execute_instruction(instruction);
+            let interrupt = self.execute_instruction(instruction);
+            if interrupt {
+                self.interupted.replace(true);
+                return true;
+            }
         }
-        let mut result = Vec::<i32>::new();
-        std::mem::swap(&mut result, &mut self.memory.borrow_mut());
-        result
+        return false;
     }
 }
 
 impl<'a> IntCodeComputer<'a> {
-    fn execute_instruction(&self, instruction: Instruction) {
+    fn execute_instruction(&self, instruction: Instruction) -> bool {
         let mut memory = self.memory.borrow_mut();
         match instruction.operation {
             Operation::Add => {
@@ -58,11 +75,17 @@ impl<'a> IntCodeComputer<'a> {
                 arithmetic_operation(&instruction, &mut memory, Box::new(|x, y| x * y));
             }
             Operation::Input => {
-                let input_result = (self.input_callback)();
-                if let Parameter::Pointer(storage_index) = instruction.parameters[0] {
-                    memory[storage_index] = input_result;
+                if self.interupted.get() {
+                    self.interupted.replace(false);
+                    let input_result = (self.input_buffer.borrow_mut().pop_front())
+                        .expect("input buffer empty after interrupt");
+                    if let Parameter::Pointer(storage_index) = instruction.parameters[0] {
+                        memory[storage_index] = input_result;
+                    } else {
+                        panic!("attempting to store input result to value")
+                    }
                 } else {
-                    panic!("attempting to store input result to value")
+                    return true;
                 }
             }
             Operation::Output => {
@@ -73,14 +96,14 @@ impl<'a> IntCodeComputer<'a> {
                 if resolve_value_in_memory(instruction.parameters[0], &memory) != 0 {
                     let jump_address = resolve_value_in_memory(instruction.parameters[1], &memory);
                     self.instruction_ptr.replace(jump_address as usize);
-                    return;
+                    return false;
                 }
             }
             Operation::JumpIfFalse => {
                 if resolve_value_in_memory(instruction.parameters[0], &memory) == 0 {
                     let jump_address = resolve_value_in_memory(instruction.parameters[1], &memory);
                     self.instruction_ptr.replace(jump_address as usize);
-                    return;
+                    return false;
                 }
             }
             Operation::LessThan => {
@@ -99,12 +122,13 @@ impl<'a> IntCodeComputer<'a> {
             }
             Operation::Halt => {
                 self.instruction_ptr.replace(memory.len());
-                return;
+                return false;
             }
         }
         let old_ptr = self.instruction_ptr.get();
         let new_ptr = instruction.operation.parameter_count() + 1 + (old_ptr as i32);
         self.instruction_ptr.replace(new_ptr as usize);
+        false
     }
 }
 
@@ -127,80 +151,6 @@ fn resolve_value_in_memory(parameter: Parameter, memory: &Vec<i32>) -> i32 {
         Parameter::Value(value) => value,
         Parameter::Pointer(index) => memory[index],
     }
-}
-
-#[derive(Clone, Copy, Debug)]
-enum Parameter {
-    Value(i32),
-    Pointer(usize),
-}
-
-#[derive(Clone, Copy, PartialEq, Debug)]
-enum ParameterMode {
-    Value,
-    Pointer,
-}
-
-impl From<i32> for ParameterMode {
-    fn from(code: i32) -> Self {
-        match code {
-            0 => Self::Pointer,
-            1 => Self::Value,
-            x => panic!("Unknown parameter mode: {}", x),
-        }
-    }
-}
-
-#[derive(PartialEq, Debug)]
-enum Operation {
-    Add,
-    Multiply,
-    Input,
-    Output,
-    JumpIfTrue,
-    JumpIfFalse,
-    LessThan,
-    Equals,
-    Halt,
-}
-
-impl From<i32> for Operation {
-    fn from(code: i32) -> Self {
-        match code {
-            1 => Self::Add,
-            2 => Self::Multiply,
-            3 => Self::Input,
-            4 => Self::Output,
-            5 => Self::JumpIfTrue,
-            6 => Self::JumpIfFalse,
-            7 => Self::LessThan,
-            8 => Self::Equals,
-            99 => Self::Halt,
-            x => panic!("Unknown opcode: {}", x),
-        }
-    }
-}
-
-impl Operation {
-    fn parameter_count(&self) -> i32 {
-        match *self {
-            Self::Add => 3,
-            Self::Multiply => 3,
-            Self::Input => 1,
-            Self::Output => 1,
-            Self::JumpIfTrue => 2,
-            Self::JumpIfFalse => 2,
-            Self::LessThan => 3,
-            Self::Equals => 3,
-            Self::Halt => 0,
-        }
-    }
-}
-
-#[derive(Debug)]
-struct Instruction {
-    operation: Operation,
-    parameters: Vec<Parameter>,
 }
 
 fn process_opcode(opcode: &i32) -> (Operation, Vec<ParameterMode>) {
