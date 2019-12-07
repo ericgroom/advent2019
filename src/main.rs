@@ -39,5 +39,9 @@ fn main() -> Result<()> {
     );
     println!("Diagnostic code: {}", day5::run_diagnostic()?);
     println!("TEST Diagnostic code: {}", day5::run_test_diagnostic()?);
+    println!(
+        "Number of orbits: {}",
+        day6::find_direct_and_indirect_orbits()?
+    );
     Ok(())
 }
