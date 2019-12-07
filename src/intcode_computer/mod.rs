@@ -42,14 +42,8 @@ impl<'a> IntCodeComputer<'a> {
 
 impl<'a> Computer<i32> for IntCodeComputer<'a> {
     fn execute(&self) -> bool {
-        println!("starting execution at {}", self.instruction_ptr.get());
         let memory_len = self.memory.borrow().len();
         while self.instruction_ptr.get() < memory_len {
-            // println!(
-            //     "ptr: {}, memory: {:?}",
-            //     self.instruction_ptr.get(),
-            //     self.memory.borrow(),
-            // );
             let instruction = {
                 let memory = self.memory.borrow();
                 Instruction::read(&memory, &self.instruction_ptr.get())
@@ -75,7 +69,7 @@ impl<'a> IntCodeComputer<'a> {
                 arithmetic_operation(&instruction, &mut memory, Box::new(|x, y| x * y));
             }
             Operation::Input => {
-                if self.interupted.get() {
+                if self.interupted.get() || !self.input_buffer.borrow().is_empty() {
                     self.interupted.replace(false);
                     let input_result = (self.input_buffer.borrow_mut().pop_front())
                         .expect("input buffer empty after interrupt");

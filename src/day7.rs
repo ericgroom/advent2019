@@ -58,13 +58,46 @@ pub fn find_highest_thruster_signal() -> Result<i32> {
     Ok(find_max_amplitude(input, 5))
 }
 
-fn find_max_looping(software: Vec<i32>, num_amps: i32) {
-    let phase_settings = get_permutations((0..num_amps).collect());
+pub fn find_feedback_output(software: &Vec<i32>, phase_settings: Vec<i32>) -> i32 {
     let pipe = Pipe::new();
-    // let first_computer = IntCodeComputer::new(software.clone(), &|| 0, &|x| pipe.output_handle(x));
-    // let second_computer = IntCodeComputer::new(software.clone(), &|| pipe.input_handle(), &|x| {
-    //     println!("{}", x)
-    // });
+    let output = |x| pipe.send(x);
+    let amps: Vec<IntCodeComputer> = phase_settings
+        .iter()
+        .map(|_| IntCodeComputer::new(software.clone(), &output))
+        .collect();
+    for (amp, phase) in amps.iter().zip(phase_settings.iter()) {
+        amp.provide_input(*phase);
+    }
+    amps[0].provide_input(0);
+    let mut halt_count = 0;
+    while halt_count < amps.len() {
+        for amp in &amps {
+            if !pipe.is_empty() {
+                let input = pipe.receive();
+                amp.provide_input(input);
+            }
+            let has_halted = !amp.execute();
+            if has_halted {
+                halt_count += 1
+            }
+        }
+    }
+    let last_output = pipe.receive();
+    last_output
+}
+
+pub fn find_max_feedback_output(software: Vec<i32>) -> i32 {
+    let permutations = get_permutations((5..=9).collect());
+    permutations
+        .into_iter()
+        .map(|permutation| find_feedback_output(&software, permutation))
+        .max()
+        .unwrap()
+}
+
+pub fn find_feedback_loop_max() -> Result<i32> {
+    let input = read_list_from_file("./src/day7_input.txt", ",")?;
+    Ok(find_max_feedback_output(input))
 }
 
 #[cfg(test)]
@@ -115,6 +148,37 @@ mod tests {
     #[test]
     fn test_correct_answer_part_1() -> Result<()> {
         assert_eq!(find_highest_thruster_signal()?, 199988);
+        Ok(())
+    }
+
+    #[test]
+    fn test_find_feedback_output() {
+        let amplitude = find_feedback_output(
+            &vec![
+                3, 26, 1001, 26, -4, 26, 3, 27, 1002, 27, 2, 27, 1, 27, 26, 27, 4, 27, 1001, 28,
+                -1, 28, 1005, 28, 6, 99, 0, 0, 5,
+            ],
+            vec![9, 8, 7, 6, 5],
+        );
+        assert_eq!(amplitude, 139629729);
+    }
+
+    #[test]
+    fn test_find_feedback_output_long() {
+        let amplitude = find_feedback_output(
+            &vec![
+                3, 52, 1001, 52, -5, 52, 3, 53, 1, 52, 56, 54, 1007, 54, 5, 55, 1005, 55, 26, 1001,
+                54, -5, 54, 1105, 1, 12, 1, 53, 54, 53, 1008, 54, 0, 55, 1001, 55, 1, 55, 2, 53,
+                55, 53, 4, 53, 1001, 56, -1, 56, 1005, 56, 6, 99, 0, 0, 0, 0, 10,
+            ],
+            vec![9, 7, 8, 5, 6],
+        );
+        assert_eq!(amplitude, 18216);
+    }
+
+    #[test]
+    fn test_correct_answer_part_2() -> Result<()> {
+        assert_eq!(find_feedback_loop_max()?, 17519904);
         Ok(())
     }
 }

@@ -53,6 +53,10 @@ fn main() -> Result<()> {
         "Max thruster signal: {}",
         day7::find_highest_thruster_signal()?
     );
+    println!(
+        "Max thruster signal in feedback loop: {}",
+        day7::find_feedback_loop_max()?
+    );
 
     Ok(())
 }
