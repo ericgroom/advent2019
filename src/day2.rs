@@ -1,27 +1,13 @@
 use anyhow::Result;
 use std::fs;
 
+use crate::intcode_computer::{Computer, IntCodeComputer};
+
 pub fn run_computation(input: Vec<i32>) -> Vec<i32> {
-    let mut result = input.clone();
-    for current_index in (0..result.len()).into_iter().step_by(4) {
-        match result[current_index] {
-            1 => {
-                let first_index = result[current_index + 1] as usize;
-                let second_index = result[current_index + 2] as usize;
-                let result_index = result[current_index + 3] as usize;
-                result[result_index] = result[first_index] + result[second_index];
-            }
-            2 => {
-                let first_index = result[current_index + 1] as usize;
-                let second_index = result[current_index + 2] as usize;
-                let result_index = result[current_index + 3] as usize;
-                result[result_index] = result[first_index] * result[second_index];
-            }
-            99 => return result,
-            _ => {}
-        }
-    }
-    return result;
+    let computer = IntCodeComputer::new(input, &|| panic!("input not implemented"), &|_| {
+        panic!("output not implemented")
+    });
+    computer.execute()
 }
 
 fn read_input() -> Result<Vec<i32>> {
