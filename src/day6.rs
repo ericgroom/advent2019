@@ -2,7 +2,7 @@ extern crate anyhow;
 
 use anyhow::Result;
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet, VecDeque};
 
 #[derive(Debug)]
 pub struct CelestialNode {
@@ -89,6 +89,60 @@ pub fn find_direct_and_indirect_orbits() -> Result<i32> {
     Ok(find_orbit_count(graph))
 }
 
+pub fn construct_undirected_graph(
+    pairs: Vec<(String, String)>,
+) -> HashMap<String, RefCell<Vec<String>>> {
+    let mut result: HashMap<String, RefCell<Vec<String>>> = HashMap::new();
+    for (orbitee, orbiter) in pairs {
+        if let Some(neighbors) = result.get(&orbitee) {
+            neighbors.borrow_mut().push(orbiter.clone());
+        } else {
+            result.insert(orbitee.clone(), RefCell::new(vec![orbiter.clone()]));
+        }
+
+        if let Some(neighbors) = result.get(&orbiter) {
+            neighbors.borrow_mut().push(orbitee);
+        } else {
+            result.insert(orbiter, RefCell::new(vec![orbitee.clone()]));
+        }
+    }
+    result
+}
+
+pub fn find_distance_between_two_nodes(
+    graph: HashMap<String, RefCell<Vec<String>>>,
+    node1: String,
+    node2: String,
+) -> i32 {
+    type Distance = i32;
+    let mut visited: HashSet<String> = HashSet::new();
+    let mut queue: VecDeque<(String, Distance)> = VecDeque::new();
+    queue.push_front((node1, 0));
+    while !queue.is_empty() {
+        let (current, distance) = queue.pop_front().unwrap();
+        if current == node2 {
+            return distance - 2;
+        }
+        if !visited.contains(&current) {
+            let neighbors = graph[&current].borrow();
+            visited.insert(current);
+            let neighbors_with_distance = neighbors.iter().cloned().map(|n| (n, distance + 1));
+            queue.extend(neighbors_with_distance);
+        }
+    }
+    panic!("Connection not found");
+}
+
+pub fn distance_to_santa() -> Result<i32> {
+    let input = read_input_from_file()?;
+    let graph = construct_undirected_graph(input);
+    Ok(find_distance_between_two_nodes(
+        graph,
+        "YOU".to_string(),
+        "SAN".to_string(),
+    ))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -118,6 +172,23 @@ mod tests {
     #[test]
     fn test_correct_answer_part_1() -> Result<()> {
         assert_eq!(find_direct_and_indirect_orbits()?, 621125);
+        Ok(())
+    }
+
+    #[test]
+    fn test_distance_between_two_nodes() {
+        let input =
+            read_input("COM)B\nB)C\nC)D\nD)E\nE)F\nB)G\nG)H\nD)I\nE)J\nJ)K\nK)L\nK)YOU\nI)SAN");
+        let graph = construct_undirected_graph(input);
+        assert_eq!(
+            find_distance_between_two_nodes(graph, "YOU".to_string(), "SAN".to_string()),
+            4
+        );
+    }
+
+    #[test]
+    fn test_correct_answer_part_2() -> Result<()> {
+        assert_eq!(distance_to_santa()?, 550);
         Ok(())
     }
 }

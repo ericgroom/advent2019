@@ -43,5 +43,6 @@ fn main() -> Result<()> {
         "Number of orbits: {}",
         day6::find_direct_and_indirect_orbits()?
     );
+    println!("Distance to Santa: {}", day6::distance_to_santa()?);
     Ok(())
 }
