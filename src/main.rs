@@ -4,6 +4,7 @@ mod day3;
 mod day4;
 mod day5;
 mod day6;
+mod day7;
 mod intcode_computer;
 mod utils;
 
@@ -48,5 +49,10 @@ fn main() -> Result<()> {
         day6::find_direct_and_indirect_orbits()?
     );
     println!("Distance to Santa: {}", day6::distance_to_santa()?);
+    println!(
+        "Max thruster signal: {}",
+        day7::find_highest_thruster_signal()?
+    );
+
     Ok(())
 }
