@@ -28,6 +28,22 @@ impl From<i32> for Operation {
     }
 }
 
+impl Into<i32> for Operation {
+    fn into(self) -> i32 {
+        match self {
+            Self::Add => 1,
+            Self::Multiply => 2,
+            Self::Input => 3,
+            Self::Output => 4,
+            Self::JumpIfTrue => 5,
+            Self::JumpIfFalse => 6,
+            Self::LessThan => 7,
+            Self::Equals => 8,
+            Self::Halt => 99,
+        }
+    }
+}
+
 impl Operation {
     pub fn parameter_count(&self) -> i32 {
         match *self {

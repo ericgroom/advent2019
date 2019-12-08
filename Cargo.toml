@@ -1,6 +1,9 @@
 [workspace]
 members = [
     "advent2019",
-    "intcode_computer"
+    "intcode_computer",
+    "intcode_assembler",
+    "intcode_cli",
 ]
+default-members = ["advent2019"]
 default-run = "advent2019"

@@ -1,5 +1,5 @@
 mod instruction;
-mod operations;
+pub mod operations;
 pub mod pipe;
 
 use instruction::*;
@@ -10,6 +10,7 @@ use std::collections::VecDeque;
 pub trait Computer<MemoryType> {
     /// returns false if the program has halted, if the value is true, there may be an interrupt
     fn execute(&self) -> bool;
+    fn step(&self) -> bool;
 }
 
 pub struct IntCodeComputer<'a> {
@@ -44,21 +45,25 @@ impl<'a> Computer<i32> for IntCodeComputer<'a> {
     fn execute(&self) -> bool {
         let memory_len = self.memory.borrow().len();
         while self.instruction_ptr.get() < memory_len {
-            let instruction = {
-                let memory = self.memory.borrow();
-                Instruction::read(&memory, &self.instruction_ptr.get())
-            };
-            let interrupt = self.execute_instruction(instruction);
-            if interrupt {
-                self.interupted.replace(true);
+            self.step();
+            if self.interupted.get() {
                 return true;
             }
         }
         return false;
     }
+
+    fn step(&self) -> bool {
+        let instruction = {
+            let memory = self.memory.borrow();
+            Instruction::read(&memory, &self.instruction_ptr.get())
+        };
+        self.execute_instruction(instruction)
+    }
 }
 
 impl<'a> IntCodeComputer<'a> {
+    /// returns true if halted, false otherwise
     fn execute_instruction(&self, instruction: Instruction) -> bool {
         let mut memory = self.memory.borrow_mut();
         match instruction.operation {
@@ -79,7 +84,8 @@ impl<'a> IntCodeComputer<'a> {
                         panic!("attempting to store input result to value")
                     }
                 } else {
-                    return true;
+                    self.interupted.replace(true);
+                    return false;
                 }
             }
             Operation::Output => {
@@ -116,7 +122,7 @@ impl<'a> IntCodeComputer<'a> {
             }
             Operation::Halt => {
                 self.instruction_ptr.replace(memory.len());
-                return false;
+                return true;
             }
         }
         let old_ptr = self.instruction_ptr.get();
