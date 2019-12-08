@@ -3,8 +3,8 @@ extern crate anyhow;
 use anyhow::Result;
 use std::cell::Cell;
 
-use crate::intcode_computer::{Computer, IntCodeComputer};
 use crate::utils::read::read_list_from_file;
+use intcode_computer::{Computer, IntCodeComputer};
 
 pub fn run_diagnostic() -> Result<i32> {
     let input = read_list_from_file("./src/day5_input.txt", ",")?;

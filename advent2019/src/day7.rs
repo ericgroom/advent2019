@@ -1,9 +1,9 @@
 extern crate anyhow;
 
-use crate::intcode_computer::pipe::Pipe;
-use crate::intcode_computer::{Computer, IntCodeComputer};
 use crate::utils::read::read_list_from_file;
 use anyhow::Result;
+use intcode_computer::pipe::Pipe;
+use intcode_computer::{Computer, IntCodeComputer};
 use std::cell::Cell;
 
 fn get_amplifier_sequence_output(software: &Vec<i32>, phase_settings: &Vec<i32>) -> i32 {

@@ -1,0 +1,5 @@
+[package]
+name = "intcode_computer"
+version = "0.1.0"
+authors = ["Eric Groom"]
+edition = "2018"

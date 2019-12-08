@@ -5,7 +5,6 @@ mod day4;
 mod day5;
 mod day6;
 mod day7;
-mod intcode_computer;
 mod utils;
 
 extern crate anyhow;

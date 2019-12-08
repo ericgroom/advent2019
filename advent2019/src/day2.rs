@@ -1,7 +1,7 @@
 use anyhow::Result;
 
-use crate::intcode_computer::{Computer, IntCodeComputer};
 use crate::utils::read::read_list_from_file;
+use intcode_computer::{Computer, IntCodeComputer};
 
 pub fn run_computation(input: Vec<i32>) -> Vec<i32> {
     let computer = IntCodeComputer::new(input, &|_| panic!("output not implemented"));
