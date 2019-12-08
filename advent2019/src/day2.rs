@@ -1,6 +1,4 @@
-use anyhow::Result;
-
-use crate::utils::read::read_list_from_file;
+use crate::utils::read::read_list;
 use intcode_computer::{Computer, IntCodeComputer};
 
 pub fn run_computation(input: Vec<i32>) -> Vec<i32> {
@@ -9,16 +7,20 @@ pub fn run_computation(input: Vec<i32>) -> Vec<i32> {
     computer.memory.into_inner()
 }
 
-pub fn restore_gravity_assist() -> Result<i32> {
-    let mut input = read_list_from_file("./src/day2_input.txt", ",")?;
+fn read_input_from_file() -> Vec<i32> {
+    read_list(include_str!("./day2_input.txt"), ",")
+}
+
+pub fn restore_gravity_assist() -> i32 {
+    let mut input = read_input_from_file();
     input[1] = 12;
     input[2] = 2;
     let result = run_computation(input);
-    Ok(result[0])
+    result[0]
 }
 
-pub fn find_noun_and_verb() -> Result<(i32, i32)> {
-    let input = read_list_from_file("./src/day2_input.txt", ",")?;
+pub fn find_noun_and_verb() -> (i32, i32) {
+    let input = read_input_from_file();
     let target = 19690720;
     for noun in 0..=99 {
         for verb in 0..=99 {
@@ -26,16 +28,16 @@ pub fn find_noun_and_verb() -> Result<(i32, i32)> {
             memory[1] = noun;
             memory[2] = verb;
             if run_computation(memory)[0] == target {
-                return Ok((noun, verb));
+                return (noun, verb);
             }
         }
     }
-    Ok((-1, -1))
+    (-1, -1)
 }
 
-pub fn noun_and_verb_result() -> Result<i32> {
-    let (noun, verb) = find_noun_and_verb()?;
-    Ok(100 * noun + verb)
+pub fn noun_and_verb_result() -> i32 {
+    let (noun, verb) = find_noun_and_verb();
+    100 * noun + verb
 }
 
 #[cfg(test)]
@@ -62,14 +64,12 @@ mod tests {
     }
 
     #[test]
-    fn test_restore_gravity_assist_answer() -> Result<()> {
-        assert_eq!(restore_gravity_assist()?, 5305097);
-        Ok(())
+    fn test_restore_gravity_assist_answer() {
+        assert_eq!(restore_gravity_assist(), 5305097);
     }
 
     #[test]
-    fn test_noun_verb_answer() -> Result<()> {
-        assert_eq!(noun_and_verb_result()?, 4925);
-        Ok(())
+    fn test_noun_verb_answer() {
+        assert_eq!(noun_and_verb_result(), 4925);
     }
 }

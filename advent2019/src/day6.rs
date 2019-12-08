@@ -1,6 +1,3 @@
-extern crate anyhow;
-
-use anyhow::Result;
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet, VecDeque};
 
@@ -68,9 +65,8 @@ pub fn find_distance_to_center(
     }
 }
 
-fn read_input_from_file() -> Result<Vec<(String, String)>> {
-    let input = std::fs::read_to_string("./src/day6_input.txt")?;
-    Ok(read_input(&input))
+fn read_input_from_file() -> Vec<(String, String)> {
+    read_input(include_str!("./day6_input.txt"))
 }
 
 fn read_input(input: &str) -> Vec<(String, String)> {
@@ -83,10 +79,10 @@ fn read_input(input: &str) -> Vec<(String, String)> {
         .collect()
 }
 
-pub fn find_direct_and_indirect_orbits() -> Result<i32> {
-    let input = read_input_from_file()?;
+pub fn find_direct_and_indirect_orbits() -> i32 {
+    let input = read_input_from_file();
     let graph = construct_graph(input);
-    Ok(find_orbit_count(graph))
+    find_orbit_count(graph)
 }
 
 pub fn construct_undirected_graph(
@@ -133,14 +129,10 @@ pub fn find_distance_between_two_nodes(
     panic!("Connection not found");
 }
 
-pub fn distance_to_santa() -> Result<i32> {
-    let input = read_input_from_file()?;
+pub fn distance_to_santa() -> i32 {
+    let input = read_input_from_file();
     let graph = construct_undirected_graph(input);
-    Ok(find_distance_between_two_nodes(
-        graph,
-        "YOU".to_string(),
-        "SAN".to_string(),
-    ))
+    find_distance_between_two_nodes(graph, "YOU".to_string(), "SAN".to_string())
 }
 
 #[cfg(test)]
@@ -170,9 +162,8 @@ mod tests {
     }
 
     #[test]
-    fn test_correct_answer_part_1() -> Result<()> {
-        assert_eq!(find_direct_and_indirect_orbits()?, 621125);
-        Ok(())
+    fn test_correct_answer_part_1() {
+        assert_eq!(find_direct_and_indirect_orbits(), 621125);
     }
 
     #[test]
@@ -187,8 +178,7 @@ mod tests {
     }
 
     #[test]
-    fn test_correct_answer_part_2() -> Result<()> {
-        assert_eq!(distance_to_santa()?, 550);
-        Ok(())
+    fn test_correct_answer_part_2() {
+        assert_eq!(distance_to_santa(), 550);
     }
 }

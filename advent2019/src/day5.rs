@@ -1,13 +1,14 @@
-extern crate anyhow;
-
-use anyhow::Result;
 use std::cell::Cell;
 
-use crate::utils::read::read_list_from_file;
+use crate::utils::read::read_list;
 use intcode_computer::{Computer, IntCodeComputer};
 
-pub fn run_diagnostic() -> Result<i32> {
-    let input = read_list_from_file("./src/day5_input.txt", ",")?;
+fn get_test_input() -> Vec<i32> {
+    read_list(include_str!("./day5_input.txt"), ",")
+}
+
+pub fn run_diagnostic() -> i32 {
+    let input = get_test_input();
     let output_container = Cell::new(None);
     let output_callback = |num| {
         output_container.replace(Some(num));
@@ -16,13 +17,13 @@ pub fn run_diagnostic() -> Result<i32> {
     while computer.execute() {
         computer.provide_input(1);
     }
-    Ok(output_container
+    output_container
         .take()
-        .expect("Computer should have outputted a diagnostic value"))
+        .expect("Computer should have outputted a diagnostic value")
 }
 
-pub fn run_test_diagnostic() -> Result<i32> {
-    let input = read_list_from_file("./src/day5_input.txt", ",")?;
+pub fn run_test_diagnostic() -> i32 {
+    let input = get_test_input();
     let output_container = Cell::new(None);
     let output_callback = |num| {
         output_container.replace(Some(num));
@@ -31,9 +32,9 @@ pub fn run_test_diagnostic() -> Result<i32> {
     while computer.execute() {
         computer.provide_input(5);
     }
-    Ok(output_container
+    output_container
         .take()
-        .expect("Computer should have outputted a diagnostic value"))
+        .expect("Computer should have outputted a diagnostic value")
 }
 
 #[cfg(test)]
@@ -119,9 +120,8 @@ mod tests {
     }
 
     #[test]
-    fn test_correct_answer_part_1() -> Result<()> {
-        assert_eq!(run_diagnostic()?, 9938601);
-        Ok(())
+    fn test_correct_answer_part_1() {
+        assert_eq!(run_diagnostic(), 9938601);
     }
 
     #[test]
@@ -247,8 +247,7 @@ mod tests {
     }
 
     #[test]
-    fn test_correct_answer_part_2() -> Result<()> {
-        assert_eq!(run_test_diagnostic()?, 4283952);
-        Ok(())
+    fn test_correct_answer_part_2() {
+        assert_eq!(run_test_diagnostic(), 4283952);
     }
 }

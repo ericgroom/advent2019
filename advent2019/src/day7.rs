@@ -1,7 +1,4 @@
-extern crate anyhow;
-
-use crate::utils::read::read_list_from_file;
-use anyhow::Result;
+use crate::utils::read::read_list;
 use intcode_computer::pipe::Pipe;
 use intcode_computer::{Computer, IntCodeComputer};
 use std::cell::Cell;
@@ -53,9 +50,13 @@ pub fn find_max_amplitude(software: Vec<i32>, num_amps: i32) -> i32 {
         .unwrap()
 }
 
-pub fn find_highest_thruster_signal() -> Result<i32> {
-    let input = read_list_from_file("./src/day7_input.txt", ",")?;
-    Ok(find_max_amplitude(input, 5))
+fn get_test_input() -> Vec<i32> {
+    read_list(include_str!("./day7_input.txt"), ",")
+}
+
+pub fn find_highest_thruster_signal() -> i32 {
+    let input = get_test_input();
+    find_max_amplitude(input, 5)
 }
 
 pub fn find_feedback_output(software: &Vec<i32>, phase_settings: Vec<i32>) -> i32 {
@@ -95,9 +96,9 @@ pub fn find_max_feedback_output(software: Vec<i32>) -> i32 {
         .unwrap()
 }
 
-pub fn find_feedback_loop_max() -> Result<i32> {
-    let input = read_list_from_file("./src/day7_input.txt", ",")?;
-    Ok(find_max_feedback_output(input))
+pub fn find_feedback_loop_max() -> i32 {
+    let input = get_test_input();
+    find_max_feedback_output(input)
 }
 
 #[cfg(test)]
@@ -146,9 +147,8 @@ mod tests {
     }
 
     #[test]
-    fn test_correct_answer_part_1() -> Result<()> {
-        assert_eq!(find_highest_thruster_signal()?, 199988);
-        Ok(())
+    fn test_correct_answer_part_1() {
+        assert_eq!(find_highest_thruster_signal(), 199988);
     }
 
     #[test]
@@ -177,8 +177,7 @@ mod tests {
     }
 
     #[test]
-    fn test_correct_answer_part_2() -> Result<()> {
-        assert_eq!(find_feedback_loop_max()?, 17519904);
-        Ok(())
+    fn test_correct_answer_part_2() {
+        assert_eq!(find_feedback_loop_max(), 17519904);
     }
 }

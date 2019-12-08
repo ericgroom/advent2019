@@ -1,5 +1,4 @@
-use crate::utils::read::read_list_from_file;
-use anyhow::Result;
+use crate::utils::read::read_list;
 
 fn total_fuel_required(modules: Vec<i32>) -> i64 {
     modules.iter().map(|mass| fuel_required(*mass) as i64).sum()
@@ -25,18 +24,18 @@ pub fn fuel_required(mass: i32) -> i32 {
     mass / 3 - 2
 }
 
-fn get_test_input() -> Result<Vec<i32>> {
-    read_list_from_file("./src/day1_input.txt", "\n")
+fn get_test_input() -> Vec<i32> {
+    read_list(include_str!("./day1_input.txt"), "\n")
 }
 
-pub fn get_test_result() -> Result<i64> {
-    let modules = get_test_input()?;
-    Ok(total_fuel_required(modules))
+pub fn get_test_result() -> i64 {
+    let modules = get_test_input();
+    total_fuel_required(modules)
 }
 
-pub fn get_test_result_with_fuel_cost() -> Result<i64> {
-    let modules = get_test_input()?;
-    Ok(total_fuel_required_with_fuel_cost(modules))
+pub fn get_test_result_with_fuel_cost() -> i64 {
+    let modules = get_test_input();
+    total_fuel_required_with_fuel_cost(modules)
 }
 
 #[cfg(test)]
@@ -44,10 +43,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_get_test_input() -> Result<()> {
-        let modules = get_test_input()?;
+    fn test_get_test_input() {
+        let modules = get_test_input();
         assert_eq!(100, modules.len());
-        Ok(())
     }
 
     #[test]
@@ -73,14 +71,12 @@ mod tests {
     }
 
     #[test]
-    fn test_correct_answer_part_1() -> Result<()> {
-        assert_eq!(get_test_result()?, 3223398);
-        Ok(())
+    fn test_correct_answer_part_1() {
+        assert_eq!(get_test_result(), 3223398);
     }
 
     #[test]
-    fn test_correct_answer_part_2() -> Result<()> {
-        assert_eq!(get_test_result_with_fuel_cost()?, 4832253);
-        Ok(())
+    fn test_correct_answer_part_2() {
+        assert_eq!(get_test_result_with_fuel_cost(), 4832253);
     }
 }

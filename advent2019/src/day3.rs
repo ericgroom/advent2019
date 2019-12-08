@@ -1,6 +1,4 @@
 /// The code here is terrible, I went off on a tangent with an incorrect algorithm and didn't have time to clean it up, it works though
-extern crate anyhow;
-
 use crate::utils::read::read_list;
 use anyhow::*;
 use std::collections::{HashMap, HashSet};
@@ -131,9 +129,8 @@ fn visited_nodes_with_distance(movements: Vec<Movement>) -> HashMap<(i32, i32), 
     result_map
 }
 
-fn read_input_file() -> Result<(Vec<Movement>, Vec<Movement>)> {
-    let input = std::fs::read_to_string("./src/day3_input.txt")?;
-    Ok(read_input(&input))
+fn read_input_file() -> (Vec<Movement>, Vec<Movement>) {
+    read_input(include_str!("./day3_input.txt"))
 }
 
 fn read_input(input: &str) -> (Vec<Movement>, Vec<Movement>) {
@@ -143,14 +140,14 @@ fn read_input(input: &str) -> (Vec<Movement>, Vec<Movement>) {
     (read_list(wire1_str, ","), read_list(wire2_str, ","))
 }
 
-pub fn closest_intersection() -> Result<i32> {
-    let (wire1, wire2) = read_input_file()?;
-    Ok(find_nearest_wire_intersection(wire1, wire2))
+pub fn closest_intersection() -> i32 {
+    let (wire1, wire2) = read_input_file();
+    find_nearest_wire_intersection(wire1, wire2)
 }
 
-pub fn minimal_delay_intersection() -> Result<i32> {
-    let (wire1, wire2) = read_input_file()?;
-    Ok(find_lowest_wire_delay_intersection(wire1, wire2))
+pub fn minimal_delay_intersection() -> i32 {
+    let (wire1, wire2) = read_input_file();
+    find_lowest_wire_delay_intersection(wire1, wire2)
 }
 
 #[cfg(test)]
@@ -232,9 +229,8 @@ mod tests {
     }
 
     #[test]
-    fn test_correct_answer() -> Result<()> {
-        assert_eq!(closest_intersection()?, 1431);
-        Ok(())
+    fn test_correct_answer() {
+        assert_eq!(closest_intersection(), 1431);
     }
 
     #[test]
@@ -252,8 +248,7 @@ mod tests {
     }
 
     #[test]
-    fn test_correct_answer_part_2() -> Result<()> {
-        assert_eq!(minimal_delay_intersection()?, 48012);
-        Ok(())
+    fn test_correct_answer_part_2() {
+        assert_eq!(minimal_delay_intersection(), 48012);
     }
 }
