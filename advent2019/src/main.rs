@@ -51,4 +51,5 @@ fn main() {
         day7::find_feedback_loop_max()
     );
     println!("Image corruption check: {}", day8::ensure_no_corruption());
+    print!("{}", day8::display_password());
 }
