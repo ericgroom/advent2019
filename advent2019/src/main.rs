@@ -5,6 +5,7 @@ mod day4;
 mod day5;
 mod day6;
 mod day7;
+mod day8;
 mod utils;
 
 fn main() {
@@ -49,4 +50,5 @@ fn main() {
         "Max thruster signal in feedback loop: {}",
         day7::find_feedback_loop_max()
     );
+    println!("Image corruption check: {}", day8::ensure_no_corruption());
 }
