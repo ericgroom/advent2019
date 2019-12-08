@@ -1,9 +1,11 @@
-mod instruction;
+pub mod instruction;
 pub mod operations;
+pub mod parameter;
 pub mod pipe;
 
 use instruction::*;
 use operations::*;
+use parameter::*;
 use std::cell::{Cell, RefCell};
 use std::collections::VecDeque;
 
@@ -153,24 +155,14 @@ fn resolve_value_in_memory(parameter: Parameter, memory: &Vec<i32>) -> i32 {
     }
 }
 
-fn process_opcode(opcode: &i32) -> (Operation, Vec<ParameterMode>) {
-    let operation_int = opcode % 100;
-    let operation = Operation::from(operation_int);
-    let mut parameter_modes = Vec::new();
-    let mut parameter_section = opcode / 100;
-    for _ in 0..operation.parameter_count() {
-        let mode = parameter_section % 10;
-        parameter_modes.push(ParameterMode::from(mode));
-        parameter_section /= 10;
-    }
-    (operation, parameter_modes)
-}
-
 impl Instruction {
     fn read(memory: &Vec<i32>, instruction_ptr: &usize) -> Instruction {
         let mut iter = memory[*instruction_ptr..].iter();
         let opcode = iter.next().expect("Cannot read from empty memory");
-        let (operation, parameter_modes) = process_opcode(&opcode);
+        let OpCode {
+            operation,
+            parameter_modes,
+        } = OpCode::from(*opcode);
         let mut parameters: Vec<Parameter> = Vec::new();
         for i in 0..operation.parameter_count() {
             let mode = parameter_modes[i as usize];
@@ -187,26 +179,5 @@ impl Instruction {
             operation: operation,
             parameters: parameters,
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_process_opcode() {
-        assert_eq!(
-            process_opcode(&1002),
-            (
-                Operation::Multiply,
-                vec![
-                    ParameterMode::Pointer,
-                    ParameterMode::Value,
-                    ParameterMode::Pointer
-                ]
-            )
-        );
-        assert_eq!(process_opcode(&99), (Operation::Halt, vec![]));
     }
 }
