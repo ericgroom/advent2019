@@ -7,10 +7,12 @@ mod tests {
 
     #[test]
     fn test_relative_mode() {
-        let program = vec![
+        let mut program = vec![
             109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99,
         ];
         let program_copy = program.clone();
+
+        program.resize(program.len() + 256, 0);
         let output_container = RefCell::new(Vec::new());
         let output_handle = |i| output_container.borrow_mut().push(i);
         let computer = IntCodeComputer::new(program, &output_handle);
