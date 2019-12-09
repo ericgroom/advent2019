@@ -1,53 +1,71 @@
-use intcode_computer::instruction::Instruction;
-use intcode_computer::operations::Operation;
-use intcode_computer::parameter::Parameter;
+use intcode_computer::operations::OpCode;
+use intcode_computer::parameter::ParameterMode;
+use std::collections::HashMap;
 
-fn str_to_operation(instr: &str) -> Operation {
-    match instr.to_ascii_uppercase().as_str() {
-        "ADD" => Operation::Add,
-        "MUL" => Operation::Multiply,
-        "READ" => Operation::Input,
-        "WRITE" => Operation::Output,
-        "JIT" => Operation::JumpIfTrue,
-        "JIF" => Operation::JumpIfFalse,
-        "LT" => Operation::LessThan,
-        "GT" => Operation::Equals,
-        "HALT" => Operation::Halt,
-        x => panic!("Unknown operation: {}", x),
-    }
-}
+mod lexer;
 
-fn parse_parameter(parameter: &str) -> Parameter {
-    if parameter.to_ascii_lowercase().starts_with('i') {
-        let int: i32 = parameter[1..].parse().unwrap();
-        Parameter::Value(int)
-    } else {
-        let addr: i32 = parameter.parse().unwrap();
-        Parameter::Pointer(addr as usize)
-    }
+use lexer::{tokenize, Token};
+
+enum Temp {
+    Resolved(i32),
+    LabelReference(String),
 }
 
 pub fn assemble(code: &str) -> Vec<i32> {
-    let instructions = code.split('\n');
-    let mut result = Vec::new();
-    for instruction in instructions {
-        let tokens: Vec<_> = instruction.split_ascii_whitespace().collect();
-        if tokens.is_empty() {
-            continue;
+    let mut result: Vec<Temp> = Vec::new();
+    let mut address_map: HashMap<String, usize> = HashMap::new();
+    let tokens = tokenize(code);
+    println!("{:?}", tokens);
+    let mut tokens_iter = tokens.iter();
+    while let Some(token) = tokens_iter.next() {
+        match token {
+            Token::LabelDefinition(label) => {
+                address_map.insert(label.clone(), result.len());
+            }
+            Token::Operation(operation) => {
+                let expected_parameters = operation.parameter_count() as usize;
+                let mut params = Vec::new();
+                for _ in 0..expected_parameters {
+                    params.push(tokens_iter.next().unwrap());
+                }
+                let parameter_modes: Vec<ParameterMode> = params
+                    .iter()
+                    .map(|token| match token {
+                        Token::Immediate(_) => ParameterMode::Value,
+                        Token::Int(_) | Token::LabelReference(_) => ParameterMode::Pointer,
+                        _ => panic!("not a parmeter"),
+                    })
+                    .collect();
+                let opcode = OpCode {
+                    operation: *operation,
+                    parameter_modes: parameter_modes,
+                };
+                result.push(Temp::Resolved(opcode.into()));
+                for token in params {
+                    match token {
+                        Token::Immediate(i) => result.push(Temp::Resolved(*i)),
+                        Token::Int(i) => result.push(Temp::Resolved(*i)),
+                        Token::LabelReference(label) => {
+                            result.push(Temp::LabelReference(label.clone()))
+                        }
+                        _ => panic!("unexpected token as parameter"),
+                    }
+                }
+            }
+            _ => panic!("unexpected token"),
         }
-        let operation = str_to_operation(tokens[0]);
-        assert_eq!(tokens[1..].len(), operation.parameter_count() as usize);
-        let parameters: Vec<Parameter> = tokens[1..]
-            .into_iter()
-            .map(|param| parse_parameter(param))
-            .collect();
-        let instruction = Instruction {
-            operation: operation,
-            parameters: parameters,
-        };
-        result.append(&mut instruction.into());
     }
+    println!("{:?}", address_map);
     result
+        .iter()
+        .map(|token| match token {
+            Temp::Resolved(i) => *i,
+            Temp::LabelReference(label) => *address_map
+                .get(label)
+                .expect(&format!("label: '{}' not found", label))
+                as i32,
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -67,7 +85,19 @@ mod tests {
 
     #[test]
     fn test_immediate_values() {
-        let program = "ADD 0 i2 i5";
+        let program = "ADD 0 ^2 ^5";
         assert_eq!(assemble(program), vec![11001, 0, 2, 5]);
+    }
+
+    #[test]
+    fn test_includes_blank_lines() {
+        let program = "\n\nADD 0 ^2 ^5\nMUL 1 2 3";
+        assert_eq!(assemble(program), vec![11001, 0, 2, 5, 2, 1, 2, 3]);
+    }
+
+    #[test]
+    fn test_label_reference() {
+        let program = "main:\nADD 2 1 2\nJIT 1 main";
+        assert_eq!(assemble(program), vec![1, 2, 1, 2, 5, 1, 0]);
     }
 }

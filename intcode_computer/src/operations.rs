@@ -1,6 +1,6 @@
 use super::parameter::ParameterMode;
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Copy, Clone)]
 pub enum Operation {
     Add,
     Multiply,
