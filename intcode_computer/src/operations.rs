@@ -11,7 +11,7 @@ pub enum Operation {
     JumpIfFalse,
     LessThan,
     Equals,
-    SetRelativeBase,
+    AdjustRelativeBase,
     Halt,
 }
 
@@ -26,7 +26,7 @@ impl From<IntcodeMemoryCellType> for Operation {
             6 => Self::JumpIfFalse,
             7 => Self::LessThan,
             8 => Self::Equals,
-            9 => Self::SetRelativeBase,
+            9 => Self::AdjustRelativeBase,
             99 => Self::Halt,
             x => panic!("Unknown opcode: {}", x),
         }
@@ -44,7 +44,7 @@ impl Into<IntcodeMemoryCellType> for Operation {
             Self::JumpIfFalse => 6,
             Self::LessThan => 7,
             Self::Equals => 8,
-            Self::SetRelativeBase => 9,
+            Self::AdjustRelativeBase => 9,
             Self::Halt => 99,
         }
     }
@@ -61,7 +61,7 @@ impl Operation {
             Self::JumpIfFalse => 2,
             Self::LessThan => 3,
             Self::Equals => 3,
-            Self::SetRelativeBase => 1,
+            Self::AdjustRelativeBase => 1,
             Self::Halt => 0,
         }
     }

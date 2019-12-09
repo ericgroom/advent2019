@@ -148,10 +148,10 @@ impl<'a> IntCodeComputer<'a> {
                     Box::new(|x, y| if x == y { 1 } else { 0 }),
                 );
             }
-            Operation::SetRelativeBase => {
-                let new_base =
+            Operation::AdjustRelativeBase => {
+                let delta_base =
                     resolve_value_in_memory(instruction.parameters[0], &memory, &relative_base);
-                self.relative_base.set(new_base);
+                self.relative_base.set(delta_base + relative_base);
             }
             Operation::Halt => {
                 //TODO: use set instead of replace everywhere
