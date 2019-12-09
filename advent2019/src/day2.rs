@@ -1,17 +1,17 @@
 use crate::utils::read::read_list;
-use intcode_computer::{Computer, IntCodeComputer};
+use intcode_computer::{Computer, IntCodeComputer, IntcodeMemoryCellType, IntcodeMemoryType};
 
-pub fn run_computation(input: Vec<i32>) -> Vec<i32> {
+pub fn run_computation(input: IntcodeMemoryType) -> IntcodeMemoryType {
     let computer = IntCodeComputer::new(input, &|_| panic!("output not implemented"));
     while computer.execute() {}
     computer.memory.into_inner()
 }
 
-fn read_input_from_file() -> Vec<i32> {
+fn read_input_from_file() -> IntcodeMemoryType {
     read_list(include_str!("./day2_input.txt"), ",")
 }
 
-pub fn restore_gravity_assist() -> i32 {
+pub fn restore_gravity_assist() -> IntcodeMemoryCellType {
     let mut input = read_input_from_file();
     input[1] = 12;
     input[2] = 2;
@@ -19,7 +19,7 @@ pub fn restore_gravity_assist() -> i32 {
     result[0]
 }
 
-pub fn find_noun_and_verb() -> (i32, i32) {
+pub fn find_noun_and_verb() -> (IntcodeMemoryCellType, IntcodeMemoryCellType) {
     let input = read_input_from_file();
     let target = 19690720;
     for noun in 0..=99 {
@@ -35,7 +35,7 @@ pub fn find_noun_and_verb() -> (i32, i32) {
     (-1, -1)
 }
 
-pub fn noun_and_verb_result() -> i32 {
+pub fn noun_and_verb_result() -> IntcodeMemoryCellType {
     let (noun, verb) = find_noun_and_verb();
     100 * noun + verb
 }

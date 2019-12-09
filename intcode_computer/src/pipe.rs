@@ -1,9 +1,10 @@
+use super::IntcodeMemoryCellType;
 use std::cell::RefCell;
 use std::collections::VecDeque;
 
 #[derive(Debug)]
 pub struct Pipe {
-    buffer: RefCell<VecDeque<i32>>,
+    buffer: RefCell<VecDeque<IntcodeMemoryCellType>>,
 }
 
 impl Pipe {
@@ -13,7 +14,7 @@ impl Pipe {
         }
     }
 
-    pub fn receive(&self) -> i32 {
+    pub fn receive(&self) -> IntcodeMemoryCellType {
         return self
             .buffer
             .borrow_mut()
@@ -21,7 +22,7 @@ impl Pipe {
             .expect("pipe should have input");
     }
 
-    pub fn send(&self, output: i32) {
+    pub fn send(&self, output: IntcodeMemoryCellType) {
         self.buffer.borrow_mut().push_back(output);
     }
 

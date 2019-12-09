@@ -1,5 +1,6 @@
 use super::operations::{OpCode, Operation};
 use super::parameter::{Parameter, ParameterMode};
+use super::{IntcodeMemoryCellType, IntcodeMemoryType};
 
 #[derive(Debug)]
 pub struct Instruction {
@@ -7,19 +8,19 @@ pub struct Instruction {
     pub parameters: Vec<Parameter>,
 }
 
-impl Into<Vec<i32>> for Instruction {
-    fn into(self) -> Vec<i32> {
+impl Into<IntcodeMemoryType> for Instruction {
+    fn into(self) -> IntcodeMemoryType {
         let parameter_modes: Vec<ParameterMode> = self
             .parameters
             .iter()
             .map(|param| Into::<ParameterMode>::into(*param))
             .collect();
-        let parameter_values: Vec<i32> = self
+        let parameter_values: Vec<_> = self
             .parameters
             .into_iter()
             .map(Parameter::raw_value)
             .collect();
-        let opcode: i32 = OpCode {
+        let opcode: IntcodeMemoryCellType = OpCode {
             operation: self.operation,
             parameter_modes: parameter_modes,
         }
@@ -45,7 +46,7 @@ mod tests {
                 Parameter::Pointer(1),
             ],
         };
-        let intcode: Vec<i32> = instruction.into();
+        let intcode: IntcodeMemoryType = instruction.into();
         assert_eq!(intcode, vec![1101, 3, 2, 1])
     }
 }

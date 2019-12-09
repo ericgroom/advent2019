@@ -1,9 +1,12 @@
 use crate::utils::read::read_list;
 use intcode_computer::pipe::Pipe;
-use intcode_computer::{Computer, IntCodeComputer};
+use intcode_computer::{Computer, IntCodeComputer, IntcodeMemoryCellType, IntcodeMemoryType};
 use std::cell::Cell;
 
-fn get_amplifier_sequence_output(software: &Vec<i32>, phase_settings: &Vec<i32>) -> i32 {
+fn get_amplifier_sequence_output(
+    software: &IntcodeMemoryType,
+    phase_settings: &Vec<i32>,
+) -> IntcodeMemoryCellType {
     // first amp only: input signal 0
     // every amp: phase setting then input signal, outputs output signal
     let input_signal = Cell::new(0);
@@ -13,7 +16,7 @@ fn get_amplifier_sequence_output(software: &Vec<i32>, phase_settings: &Vec<i32>)
             input_signal.replace(x);
         };
         let computer = IntCodeComputer::new(memory, &output_callback);
-        computer.provide_input(phase_setting);
+        computer.provide_input(phase_setting.into());
         computer.provide_input(input_signal.get());
         while computer.execute() {
             println!("interupted")
@@ -22,7 +25,7 @@ fn get_amplifier_sequence_output(software: &Vec<i32>, phase_settings: &Vec<i32>)
     input_signal.get()
 }
 
-fn get_permutations(list: Vec<i32>) -> Vec<Vec<i32>> {
+fn get_permutations<T: Copy>(list: Vec<T>) -> Vec<Vec<T>> {
     if list.len() <= 1 {
         return vec![list];
     }
@@ -31,17 +34,17 @@ fn get_permutations(list: Vec<i32>) -> Vec<Vec<i32>> {
     let tail_permutations = get_permutations(list[1..].to_vec());
     for permutation in tail_permutations {
         for i in 0..list.len() {
-            let mut temp_result = Vec::with_capacity(list.len());
-            temp_result.extend(permutation[..i].iter());
+            let mut temp_result: Vec<T> = Vec::with_capacity(list.len());
+            temp_result.extend_from_slice(&permutation[..i]);
             temp_result.push(head);
-            temp_result.extend(permutation[i..].iter());
+            temp_result.extend_from_slice(&permutation[i..]);
             result.push(temp_result);
         }
     }
     result
 }
 
-pub fn find_max_amplitude(software: Vec<i32>, num_amps: i32) -> i32 {
+pub fn find_max_amplitude(software: IntcodeMemoryType, num_amps: i32) -> IntcodeMemoryCellType {
     let phase_settings = get_permutations((0..num_amps).collect());
     phase_settings
         .iter()
@@ -50,16 +53,19 @@ pub fn find_max_amplitude(software: Vec<i32>, num_amps: i32) -> i32 {
         .unwrap()
 }
 
-fn get_test_input() -> Vec<i32> {
+fn get_test_input() -> IntcodeMemoryType {
     read_list(include_str!("./day7_input.txt"), ",")
 }
 
-pub fn find_highest_thruster_signal() -> i32 {
+pub fn find_highest_thruster_signal() -> IntcodeMemoryCellType {
     let input = get_test_input();
     find_max_amplitude(input, 5)
 }
 
-pub fn find_feedback_output(software: &Vec<i32>, phase_settings: Vec<i32>) -> i32 {
+pub fn find_feedback_output(
+    software: &IntcodeMemoryType,
+    phase_settings: Vec<i32>,
+) -> IntcodeMemoryCellType {
     let pipe = Pipe::new();
     let output = |x| pipe.send(x);
     let amps: Vec<IntCodeComputer> = phase_settings
@@ -67,7 +73,7 @@ pub fn find_feedback_output(software: &Vec<i32>, phase_settings: Vec<i32>) -> i3
         .map(|_| IntCodeComputer::new(software.clone(), &output))
         .collect();
     for (amp, phase) in amps.iter().zip(phase_settings.iter()) {
-        amp.provide_input(*phase);
+        amp.provide_input((*phase).into());
     }
     amps[0].provide_input(0);
     let mut halt_count = 0;
@@ -75,7 +81,7 @@ pub fn find_feedback_output(software: &Vec<i32>, phase_settings: Vec<i32>) -> i3
         for amp in &amps {
             if !pipe.is_empty() {
                 let input = pipe.receive();
-                amp.provide_input(input);
+                amp.provide_input(input.into());
             }
             let has_halted = !amp.execute();
             if has_halted {
@@ -87,7 +93,7 @@ pub fn find_feedback_output(software: &Vec<i32>, phase_settings: Vec<i32>) -> i3
     last_output
 }
 
-pub fn find_max_feedback_output(software: Vec<i32>) -> i32 {
+pub fn find_max_feedback_output(software: IntcodeMemoryType) -> IntcodeMemoryCellType {
     let permutations = get_permutations((5..=9).collect());
     permutations
         .into_iter()
@@ -96,7 +102,7 @@ pub fn find_max_feedback_output(software: Vec<i32>) -> i32 {
         .unwrap()
 }
 
-pub fn find_feedback_loop_max() -> i32 {
+pub fn find_feedback_loop_max() -> IntcodeMemoryCellType {
     let input = get_test_input();
     find_max_feedback_output(input)
 }

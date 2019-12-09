@@ -15,16 +15,22 @@ pub trait Computer<MemoryType> {
     fn step(&self) -> bool;
 }
 
+pub type IntcodeMemoryCellType = i64;
+pub type IntcodeMemoryType = Vec<i64>;
+
 pub struct IntCodeComputer<'a> {
-    pub memory: RefCell<Vec<i32>>,
+    pub memory: RefCell<IntcodeMemoryType>,
     instruction_ptr: Cell<usize>,
-    input_buffer: RefCell<VecDeque<i32>>,
-    output_callback: &'a dyn Fn(i32),
+    input_buffer: RefCell<VecDeque<IntcodeMemoryCellType>>,
+    output_callback: &'a dyn Fn(IntcodeMemoryCellType),
     interupted: Cell<bool>,
 }
 
 impl<'a> IntCodeComputer<'a> {
-    pub fn new(memory: Vec<i32>, output: &'a dyn Fn(i32)) -> IntCodeComputer<'a> {
+    pub fn new(
+        memory: IntcodeMemoryType,
+        output: &'a dyn Fn(IntcodeMemoryCellType),
+    ) -> IntCodeComputer<'a> {
         IntCodeComputer {
             memory: RefCell::new(memory),
             instruction_ptr: Cell::new(0),
@@ -34,16 +40,16 @@ impl<'a> IntCodeComputer<'a> {
         }
     }
 
-    pub fn provide_input(&self, input: i32) {
+    pub fn provide_input(&self, input: IntcodeMemoryCellType) {
         self.input_buffer.borrow_mut().push_back(input);
     }
 
-    pub fn terminate(self) -> Vec<i32> {
+    pub fn terminate(self) -> IntcodeMemoryType {
         self.memory.into_inner()
     }
 }
 
-impl<'a> Computer<i32> for IntCodeComputer<'a> {
+impl<'a> Computer<IntcodeMemoryCellType> for IntCodeComputer<'a> {
     fn execute(&self) -> bool {
         let memory_len = self.memory.borrow().len();
         while self.instruction_ptr.get() < memory_len {
@@ -128,7 +134,8 @@ impl<'a> IntCodeComputer<'a> {
             }
         }
         let old_ptr = self.instruction_ptr.get();
-        let new_ptr = instruction.operation.parameter_count() + 1 + (old_ptr as i32);
+        let new_ptr =
+            instruction.operation.parameter_count() + 1 + (old_ptr as IntcodeMemoryCellType);
         self.instruction_ptr.replace(new_ptr as usize);
         false
     }
@@ -136,8 +143,10 @@ impl<'a> IntCodeComputer<'a> {
 
 fn arithmetic_operation(
     instruction: &Instruction,
-    memory: &mut Vec<i32>,
-    transform: Box<dyn FnOnce(i32, i32) -> i32>,
+    memory: &mut IntcodeMemoryType,
+    transform: Box<
+        dyn FnOnce(IntcodeMemoryCellType, IntcodeMemoryCellType) -> IntcodeMemoryCellType,
+    >,
 ) {
     if let Parameter::Pointer(storage_index) = instruction.parameters[2] {
         let operand1 = resolve_value_in_memory(instruction.parameters[0], &memory);
@@ -148,7 +157,10 @@ fn arithmetic_operation(
     }
 }
 
-fn resolve_value_in_memory(parameter: Parameter, memory: &Vec<i32>) -> i32 {
+fn resolve_value_in_memory(
+    parameter: Parameter,
+    memory: &IntcodeMemoryType,
+) -> IntcodeMemoryCellType {
     match parameter {
         Parameter::Value(value) => value,
         Parameter::Pointer(index) => memory[index],
@@ -156,7 +168,7 @@ fn resolve_value_in_memory(parameter: Parameter, memory: &Vec<i32>) -> i32 {
 }
 
 impl Instruction {
-    fn read(memory: &Vec<i32>, instruction_ptr: &usize) -> Instruction {
+    fn read(memory: &IntcodeMemoryType, instruction_ptr: &usize) -> Instruction {
         let mut iter = memory[*instruction_ptr..].iter();
         let opcode = iter.next().expect("Cannot read from empty memory");
         let OpCode {

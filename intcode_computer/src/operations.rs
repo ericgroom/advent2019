@@ -1,4 +1,5 @@
 use super::parameter::ParameterMode;
+use super::IntcodeMemoryCellType;
 
 #[derive(PartialEq, Eq, Debug, Copy, Clone)]
 pub enum Operation {
@@ -13,8 +14,8 @@ pub enum Operation {
     Halt,
 }
 
-impl From<i32> for Operation {
-    fn from(code: i32) -> Self {
+impl From<IntcodeMemoryCellType> for Operation {
+    fn from(code: IntcodeMemoryCellType) -> Self {
         match code {
             1 => Self::Add,
             2 => Self::Multiply,
@@ -30,8 +31,8 @@ impl From<i32> for Operation {
     }
 }
 
-impl Into<i32> for Operation {
-    fn into(self) -> i32 {
+impl Into<IntcodeMemoryCellType> for Operation {
+    fn into(self) -> IntcodeMemoryCellType {
         match self {
             Self::Add => 1,
             Self::Multiply => 2,
@@ -47,7 +48,7 @@ impl Into<i32> for Operation {
 }
 
 impl Operation {
-    pub fn parameter_count(&self) -> i32 {
+    pub fn parameter_count(&self) -> IntcodeMemoryCellType {
         match *self {
             Self::Add => 3,
             Self::Multiply => 3,
@@ -68,8 +69,8 @@ pub struct OpCode {
     pub parameter_modes: Vec<ParameterMode>,
 }
 
-impl From<i32> for OpCode {
-    fn from(opcode: i32) -> Self {
+impl From<IntcodeMemoryCellType> for OpCode {
+    fn from(opcode: IntcodeMemoryCellType) -> Self {
         let operation_int = opcode % 100;
         let operation = Operation::from(operation_int);
         let mut parameter_modes = Vec::new();
@@ -86,14 +87,14 @@ impl From<i32> for OpCode {
     }
 }
 
-impl Into<i32> for OpCode {
-    fn into(self) -> i32 {
-        let operation_part: i32 = self.operation.into();
+impl Into<IntcodeMemoryCellType> for OpCode {
+    fn into(self) -> IntcodeMemoryCellType {
+        let operation_part: IntcodeMemoryCellType = self.operation.into();
         let parameter_part = {
             let mut result = 0;
             for parameter_mode in self.parameter_modes.into_iter().rev() {
                 result *= 10;
-                let parameter_code: i32 = parameter_mode.into();
+                let parameter_code: IntcodeMemoryCellType = parameter_mode.into();
                 result += parameter_code;
             }
             result
@@ -150,7 +151,7 @@ mod tests {
                     ParameterMode::Pointer,
                 ],
             };
-            assert_eq!(Into::<i32>::into(code), 1);
+            assert_eq!(Into::<IntcodeMemoryCellType>::into(code), 1);
         }
         {
             let code = OpCode {
@@ -161,14 +162,14 @@ mod tests {
                     ParameterMode::Value,
                 ],
             };
-            assert_eq!(Into::<i32>::into(code), 10002);
+            assert_eq!(Into::<IntcodeMemoryCellType>::into(code), 10002);
         }
         {
             let code = OpCode {
                 operation: Operation::JumpIfFalse,
                 parameter_modes: vec![ParameterMode::Value, ParameterMode::Pointer],
             };
-            assert_eq!(Into::<i32>::into(code), 106);
+            assert_eq!(Into::<IntcodeMemoryCellType>::into(code), 106);
         }
     }
 }

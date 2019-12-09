@@ -1,6 +1,8 @@
+use super::IntcodeMemoryCellType;
+
 #[derive(Clone, Copy, Debug)]
 pub enum Parameter {
-    Value(i32),
+    Value(IntcodeMemoryCellType),
     Pointer(usize),
 }
 
@@ -14,10 +16,10 @@ impl Into<ParameterMode> for Parameter {
 }
 
 impl Parameter {
-    pub fn raw_value(self) -> i32 {
+    pub fn raw_value(self) -> IntcodeMemoryCellType {
         match self {
             Self::Value(value) => value,
-            Self::Pointer(addr) => addr as i32,
+            Self::Pointer(addr) => addr as IntcodeMemoryCellType,
         }
     }
 }
@@ -28,8 +30,8 @@ pub enum ParameterMode {
     Pointer,
 }
 
-impl From<i32> for ParameterMode {
-    fn from(code: i32) -> Self {
+impl From<IntcodeMemoryCellType> for ParameterMode {
+    fn from(code: IntcodeMemoryCellType) -> Self {
         match code {
             0 => Self::Pointer,
             1 => Self::Value,
@@ -38,8 +40,8 @@ impl From<i32> for ParameterMode {
     }
 }
 
-impl Into<i32> for ParameterMode {
-    fn into(self) -> i32 {
+impl Into<IntcodeMemoryCellType> for ParameterMode {
+    fn into(self) -> IntcodeMemoryCellType {
         match self {
             Self::Pointer => 0,
             Self::Value => 1,

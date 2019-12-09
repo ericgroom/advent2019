@@ -1,13 +1,13 @@
 use std::cell::Cell;
 
 use crate::utils::read::read_list;
-use intcode_computer::{Computer, IntCodeComputer};
+use intcode_computer::{Computer, IntCodeComputer, IntcodeMemoryCellType, IntcodeMemoryType};
 
-fn get_test_input() -> Vec<i32> {
+fn get_test_input() -> IntcodeMemoryType {
     read_list(include_str!("./day5_input.txt"), ",")
 }
 
-pub fn run_diagnostic() -> i32 {
+pub fn run_diagnostic() -> IntcodeMemoryCellType {
     let input = get_test_input();
     let output_container = Cell::new(None);
     let output_callback = |num| {
@@ -22,7 +22,7 @@ pub fn run_diagnostic() -> i32 {
         .expect("Computer should have outputted a diagnostic value")
 }
 
-pub fn run_test_diagnostic() -> i32 {
+pub fn run_test_diagnostic() -> IntcodeMemoryCellType {
     let input = get_test_input();
     let output_container = Cell::new(None);
     let output_callback = |num| {
@@ -106,7 +106,7 @@ mod tests {
         }
 
         let output_called_count = Cell::new(0);
-        let known_output = |num: i32| {
+        let known_output = |num| {
             assert_eq!(num, 2);
             output_called_count.replace(output_called_count.get() + 1);
         };
