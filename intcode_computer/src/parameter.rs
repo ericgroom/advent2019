@@ -4,6 +4,14 @@ use super::IntcodeMemoryCellType;
 pub enum Parameter {
     Value(IntcodeMemoryCellType),
     Pointer(usize),
+    Relative(IntcodeMemoryCellType),
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum ParameterMode {
+    Value,
+    Pointer,
+    Relative,
 }
 
 impl Into<ParameterMode> for Parameter {
@@ -11,6 +19,7 @@ impl Into<ParameterMode> for Parameter {
         match self {
             Self::Value(_) => ParameterMode::Value,
             Self::Pointer(_) => ParameterMode::Pointer,
+            Self::Relative(_) => ParameterMode::Relative,
         }
     }
 }
@@ -20,14 +29,9 @@ impl Parameter {
         match self {
             Self::Value(value) => value,
             Self::Pointer(addr) => addr as IntcodeMemoryCellType,
+            Self::Relative(offset) => offset,
         }
     }
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum ParameterMode {
-    Value,
-    Pointer,
 }
 
 impl From<IntcodeMemoryCellType> for ParameterMode {
@@ -35,6 +39,7 @@ impl From<IntcodeMemoryCellType> for ParameterMode {
         match code {
             0 => Self::Pointer,
             1 => Self::Value,
+            2 => Self::Relative,
             x => panic!("Unknown parameter mode: {}", x),
         }
     }
@@ -45,6 +50,7 @@ impl Into<IntcodeMemoryCellType> for ParameterMode {
         match self {
             Self::Pointer => 0,
             Self::Value => 1,
+            Self::Relative => 2,
         }
     }
 }

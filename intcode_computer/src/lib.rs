@@ -24,6 +24,7 @@ pub struct IntCodeComputer<'a> {
     input_buffer: RefCell<VecDeque<IntcodeMemoryCellType>>,
     output_callback: &'a dyn Fn(IntcodeMemoryCellType),
     interupted: Cell<bool>,
+    relative_base: Cell<IntcodeMemoryCellType>,
 }
 
 impl<'a> IntCodeComputer<'a> {
@@ -37,6 +38,7 @@ impl<'a> IntCodeComputer<'a> {
             input_buffer: RefCell::new(VecDeque::new()),
             output_callback: output,
             interupted: Cell::new(false),
+            relative_base: Cell::new(0),
         }
     }
 
@@ -74,12 +76,23 @@ impl<'a> IntCodeComputer<'a> {
     /// returns true if halted, false otherwise
     fn execute_instruction(&self, instruction: Instruction) -> bool {
         let mut memory = self.memory.borrow_mut();
+        let relative_base = self.relative_base.get();
         match instruction.operation {
             Operation::Add => {
-                arithmetic_operation(&instruction, &mut memory, Box::new(|x, y| x + y));
+                arithmetic_operation(
+                    &instruction,
+                    &mut memory,
+                    &relative_base,
+                    Box::new(|x, y| x + y),
+                );
             }
             Operation::Multiply => {
-                arithmetic_operation(&instruction, &mut memory, Box::new(|x, y| x * y));
+                arithmetic_operation(
+                    &instruction,
+                    &mut memory,
+                    &relative_base,
+                    Box::new(|x, y| x * y),
+                );
             }
             Operation::Input => {
                 if self.interupted.get() || !self.input_buffer.borrow().is_empty() {
@@ -97,19 +110,24 @@ impl<'a> IntCodeComputer<'a> {
                 }
             }
             Operation::Output => {
-                let value = resolve_value_in_memory(instruction.parameters[0], &memory);
+                let value =
+                    resolve_value_in_memory(instruction.parameters[0], &memory, &relative_base);
                 (self.output_callback)(value);
             }
             Operation::JumpIfTrue => {
-                if resolve_value_in_memory(instruction.parameters[0], &memory) != 0 {
-                    let jump_address = resolve_value_in_memory(instruction.parameters[1], &memory);
+                if resolve_value_in_memory(instruction.parameters[0], &memory, &relative_base) != 0
+                {
+                    let jump_address =
+                        resolve_value_in_memory(instruction.parameters[1], &memory, &relative_base);
                     self.instruction_ptr.replace(jump_address as usize);
                     return false;
                 }
             }
             Operation::JumpIfFalse => {
-                if resolve_value_in_memory(instruction.parameters[0], &memory) == 0 {
-                    let jump_address = resolve_value_in_memory(instruction.parameters[1], &memory);
+                if resolve_value_in_memory(instruction.parameters[0], &memory, &relative_base) == 0
+                {
+                    let jump_address =
+                        resolve_value_in_memory(instruction.parameters[1], &memory, &relative_base);
                     self.instruction_ptr.replace(jump_address as usize);
                     return false;
                 }
@@ -118,6 +136,7 @@ impl<'a> IntCodeComputer<'a> {
                 arithmetic_operation(
                     &instruction,
                     &mut memory,
+                    &relative_base,
                     Box::new(|x, y| if x < y { 1 } else { 0 }),
                 );
             }
@@ -125,10 +144,17 @@ impl<'a> IntCodeComputer<'a> {
                 arithmetic_operation(
                     &instruction,
                     &mut memory,
+                    &relative_base,
                     Box::new(|x, y| if x == y { 1 } else { 0 }),
                 );
             }
+            Operation::SetRelativeBase => {
+                let new_base =
+                    resolve_value_in_memory(instruction.parameters[0], &memory, &relative_base);
+                self.relative_base.set(new_base);
+            }
             Operation::Halt => {
+                //TODO: use set instead of replace everywhere
                 self.instruction_ptr.replace(memory.len());
                 return true;
             }
@@ -144,13 +170,15 @@ impl<'a> IntCodeComputer<'a> {
 fn arithmetic_operation(
     instruction: &Instruction,
     memory: &mut IntcodeMemoryType,
+    relative_base: &IntcodeMemoryCellType,
     transform: Box<
         dyn FnOnce(IntcodeMemoryCellType, IntcodeMemoryCellType) -> IntcodeMemoryCellType,
     >,
 ) {
+    // TODO: Also allow relative for storage?
     if let Parameter::Pointer(storage_index) = instruction.parameters[2] {
-        let operand1 = resolve_value_in_memory(instruction.parameters[0], &memory);
-        let operand2 = resolve_value_in_memory(instruction.parameters[1], &memory);
+        let operand1 = resolve_value_in_memory(instruction.parameters[0], &memory, relative_base);
+        let operand2 = resolve_value_in_memory(instruction.parameters[1], &memory, relative_base);
         memory[storage_index] = transform(operand1, operand2);
     } else {
         panic!("attempting to store arithmetic operation result to value");
@@ -160,10 +188,12 @@ fn arithmetic_operation(
 fn resolve_value_in_memory(
     parameter: Parameter,
     memory: &IntcodeMemoryType,
+    relative_base: &IntcodeMemoryCellType,
 ) -> IntcodeMemoryCellType {
     match parameter {
         Parameter::Value(value) => value,
         Parameter::Pointer(index) => memory[index],
+        Parameter::Relative(offset) => memory[(offset + relative_base) as usize],
     }
 }
 
@@ -184,6 +214,7 @@ impl Instruction {
             let parameter = match mode {
                 ParameterMode::Pointer => Parameter::Pointer(*value as usize),
                 ParameterMode::Value => Parameter::Value(*value),
+                ParameterMode::Relative => Parameter::Relative(*value),
             };
             parameters.push(parameter);
         }
