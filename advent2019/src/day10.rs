@@ -39,32 +39,6 @@ fn gcd(x: i32, y: i32) -> i32 {
     x
 }
 
-#[derive(PartialEq, Eq, Hash, Debug)]
-struct Fraction {
-    numerator: i32,
-    denominator: i32,
-    sign: Sign,
-}
-
-impl Fraction {
-    fn new(numerator: i32, denominator: i32) -> Fraction {
-        let mut sign = Sign::Positive;
-        if numerator < 0 && denominator > 0 || denominator < 0 && numerator > 0 {
-            sign = Sign::Negative;
-        }
-        let mut numerator = numerator.abs();
-        let mut denominator = numerator.abs();
-        let gcd = gcd(numerator, denominator);
-        numerator /= gcd;
-        denominator /= gcd;
-        Fraction {
-            numerator: numerator,
-            denominator: denominator,
-            sign: sign,
-        }
-    }
-}
-
 fn find_number_of_visible_asteroids(asteroid: &Point, set: &HashSet<Point>) -> usize {
     // using Sign here as direction in the x axis
     let mut slope_set: HashSet<(i32, i32, Sign)> = HashSet::new();
