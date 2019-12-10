@@ -54,4 +54,8 @@ fn main() {
     println!("Image corruption check: {}", day8::ensure_no_corruption());
     print!("{}", day8::display_password());
     println!("BOOST keycode: {}", day9::run_boost_diagnostic());
+    println!(
+        "Ceres distress signal coords: {}",
+        day9::get_distress_signal_coords()
+    );
 }

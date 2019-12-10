@@ -1,6 +1,6 @@
 use crate::utils::read::read_list;
 use intcode_computer::{Computer, IntCodeComputer, IntcodeMemoryCellType, IntcodeMemoryType};
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 
 fn get_test_input() -> IntcodeMemoryType {
     read_list(include_str!("./day9_input.txt"), ",")
@@ -19,6 +19,17 @@ pub fn run_boost_diagnostic() -> IntcodeMemoryCellType {
         [keycode] => *keycode,
         list => panic!("diagnostic failed, outputs: {:?}", list),
     }
+}
+
+pub fn get_distress_signal_coords() -> IntcodeMemoryCellType {
+    let mut memory = get_test_input();
+    memory.resize(memory.len() + 256, 0);
+    let output_container = Cell::new(0);
+    let output_handle = |i| output_container.set(i);
+    let computer = IntCodeComputer::new(memory, &output_handle);
+    computer.provide_input(2);
+    while computer.execute() {}
+    output_container.into_inner()
 }
 
 #[cfg(test)]
@@ -74,5 +85,10 @@ mod tests {
     #[test]
     fn test_correct_answer_part_1() {
         assert_eq!(run_boost_diagnostic(), 2671328082);
+    }
+
+    #[test]
+    fn test_correct_answer_part_2() {
+        assert_eq!(get_distress_signal_coords(), 59095);
     }
 }
