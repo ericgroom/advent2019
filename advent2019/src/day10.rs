@@ -1,4 +1,5 @@
-use std::collections::HashSet;
+use std::cmp::Ordering;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone, Hash)]
 pub struct Point {
@@ -16,10 +17,20 @@ impl Point {
     }
 }
 
-#[derive(PartialEq, Eq, Hash, Debug)]
+#[derive(PartialEq, Eq, Hash, Debug, PartialOrd)]
 enum Sign {
     Positive,
     Negative,
+}
+
+impl Ord for Sign {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match (self, other) {
+            (Self::Positive, Self::Negative) => Ordering::Greater,
+            (Self::Negative, Self::Positive) => Ordering::Less,
+            _ => Ordering::Equal,
+        }
+    }
 }
 
 fn gcd(x: i32, y: i32) -> i32 {
@@ -39,9 +50,58 @@ fn gcd(x: i32, y: i32) -> i32 {
     x
 }
 
-fn find_number_of_visible_asteroids(asteroid: &Point, set: &HashSet<Point>) -> usize {
+#[derive(Debug, PartialEq, Eq, Hash, PartialOrd)]
+struct SlopeInfo {
+    dy: i32,
+    dx: i32,
+    x_direction: Sign,
+}
+
+impl SlopeInfo {
+    fn new(dy: i32, dx: i32, x_direction: Sign) -> SlopeInfo {
+        SlopeInfo {
+            dy: dy,
+            dx: dx,
+            x_direction: x_direction,
+        }
+    }
+}
+
+impl Ord for SlopeInfo {
+    fn cmp(&self, other: &Self) -> Ordering {
+        // self is greater than other if
+        // self is a vertical line
+        // self has a steeper slope than other
+        // if other is on the same slope, differentite by x_direction
+        if self.dx == 0 {
+            if other.dy == 0 {
+                return self.x_direction.cmp(&other.x_direction);
+            } else {
+                return Ordering::Greater;
+            }
+        }
+        let self_slope = self.dy / self.dy;
+        let other_slope = other.dy as f64 / other.dx as f64;
+        if self.dy == 0 && other.dy == 0 {
+            return self.x_direction.cmp(&other.x_direction);
+        }
+        Ordering::Equal
+        // special cases
+        // 1. equal
+        // 2. horizontal line
+        // 3. vertical line
+        // Also need to enforce clockwise direction
+        // if self.dx == other.dx && self.dy == other.dy {
+        //     return self.x_direction.cmp(&other.x_direction);
+        // } else if self.dx == other.dx {
+        //     return self.dy.cmp(&other.dy);
+        // }
+    }
+}
+
+fn find_visible_asteroids(asteroid: &Point, set: &HashSet<Point>) -> HashMap<SlopeInfo, Point> {
     // using Sign here as direction in the x axis
-    let mut slope_set: HashSet<(i32, i32, Sign)> = HashSet::new();
+    let mut slope_map: HashMap<SlopeInfo, Point> = HashMap::new();
     for candidate in set {
         if asteroid.x == candidate.x && asteroid.y == candidate.y {
             continue;
@@ -61,28 +121,30 @@ fn find_number_of_visible_asteroids(asteroid: &Point, set: &HashSet<Point>) -> u
             Sign::Positive
         };
         if dx == 0 {
-            slope_set.insert((0, 0, direction));
+            slope_map.insert(SlopeInfo::new(0, 0, direction), *candidate);
         } else {
             let gcd = gcd(dy, dx);
             if gcd == 0 {
-                slope_set.insert((1, 0, direction));
+                slope_map.insert(SlopeInfo::new(1, 0, direction), *candidate);
             } else {
-                slope_set.insert((dy / gcd, dx / gcd, direction));
+                slope_map.insert(SlopeInfo::new(dy / gcd, dx / gcd, direction), *candidate);
             }
         }
     }
-    slope_set.len()
+    slope_map
 }
 
-fn find_asteroid_with_best_visibility(asteroids: HashSet<Point>) -> usize {
+fn find_asteroid_with_best_visibility(asteroids: &HashSet<Point>) -> (Point, usize) {
     let mut max_count = 0;
-    for asteroid in &asteroids {
-        let visibility = find_number_of_visible_asteroids(&asteroid, &asteroids);
+    let mut max_asteroid = None;
+    for asteroid in asteroids {
+        let visibility = find_visible_asteroids(&asteroid, &asteroids).len();
         if visibility > max_count {
             max_count = visibility;
+            max_asteroid = Some(asteroid);
         }
     }
-    max_count
+    (*max_asteroid.unwrap(), max_count)
 }
 
 fn read_input(s: &str) -> HashSet<Point> {
@@ -103,7 +165,33 @@ fn get_test_input() -> HashSet<Point> {
 
 pub fn find_ideal_asteroid() -> usize {
     let input = get_test_input();
-    find_asteroid_with_best_visibility(input)
+    let (_, visibility) = find_asteroid_with_best_visibility(&input);
+    visibility
+}
+
+// find center node
+// find all visible nodes from that node
+// order ascending by slope and x direction
+// destroy nodes in that order
+// goto 2 with new set
+
+fn sort_visible_asteroids_by_slope(
+    central_asteroid: &Point,
+    others: &HashMap<SlopeInfo, Point>,
+) -> Vec<Point> {
+    vec![]
+}
+
+fn get_destruction_order(asteroids: HashSet<Point>) -> Vec<Point> {
+    let result = Vec::with_capacity(asteroids.len());
+    let mut asteroids = asteroids;
+    let (central_asteroid, _) = find_asteroid_with_best_visibility(&asteroids);
+    while !asteroids.is_empty() {
+        let visible_asteroids = find_visible_asteroids(&central_asteroid, &asteroids);
+        let sorted_in_order_of_destruction =
+            sort_visible_asteroids_by_slope(&central_asteroid, &visible_asteroids);
+    }
+    result
 }
 
 #[cfg(test)]
@@ -144,43 +232,43 @@ mod tests {
         }
 
         assert_eq!(
-            find_number_of_visible_asteroids(&Point::new(1, 0), &points_set),
+            find_visible_asteroids(&Point::new(1, 0), &points_set).len(),
             7
         );
         assert_eq!(
-            find_number_of_visible_asteroids(&Point::new(4, 0), &points_set),
+            find_visible_asteroids(&Point::new(4, 0), &points_set).len(),
             7
         );
         assert_eq!(
-            find_number_of_visible_asteroids(&Point::new(0, 2), &points_set),
+            find_visible_asteroids(&Point::new(0, 2), &points_set).len(),
             6
         );
         assert_eq!(
-            find_number_of_visible_asteroids(&Point::new(1, 2), &points_set),
+            find_visible_asteroids(&Point::new(1, 2), &points_set).len(),
             7
         );
         assert_eq!(
-            find_number_of_visible_asteroids(&Point::new(2, 2), &points_set),
+            find_visible_asteroids(&Point::new(2, 2), &points_set).len(),
             7
         );
         assert_eq!(
-            find_number_of_visible_asteroids(&Point::new(3, 2), &points_set),
+            find_visible_asteroids(&Point::new(3, 2), &points_set).len(),
             7
         );
         assert_eq!(
-            find_number_of_visible_asteroids(&Point::new(4, 2), &points_set),
+            find_visible_asteroids(&Point::new(4, 2), &points_set).len(),
             5
         );
         assert_eq!(
-            find_number_of_visible_asteroids(&Point::new(4, 3), &points_set),
+            find_visible_asteroids(&Point::new(4, 3), &points_set).len(),
             7
         );
         assert_eq!(
-            find_number_of_visible_asteroids(&Point::new(3, 4), &points_set),
+            find_visible_asteroids(&Point::new(3, 4), &points_set).len(),
             8
         );
         assert_eq!(
-            find_number_of_visible_asteroids(&Point::new(4, 4), &points_set),
+            find_visible_asteroids(&Point::new(4, 4), &points_set).len(),
             7
         );
     }
@@ -214,7 +302,7 @@ mod tests {
     fn test_find_asteroid_with_best_visibility() {
         {
             let input = read_input(".#..#\n.....\n#####\n....#\n...##");
-            assert_eq!(find_asteroid_with_best_visibility(input), 8);
+            assert_eq!(find_asteroid_with_best_visibility(&input).1, 8);
         }
         {
             let input = read_input(
@@ -229,7 +317,7 @@ mod tests {
 ##...#..#.
 .#....####",
             );
-            assert_eq!(find_asteroid_with_best_visibility(input), 33);
+            assert_eq!(find_asteroid_with_best_visibility(&input).1, 33);
         }
         {
             let input = read_input(
@@ -244,7 +332,7 @@ mod tests {
 ......#...
 .####.###.",
             );
-            assert_eq!(find_asteroid_with_best_visibility(input), 35);
+            assert_eq!(find_asteroid_with_best_visibility(&input).1, 35);
         }
         {
             let input = read_input(
@@ -259,7 +347,7 @@ mod tests {
 .##...##.#
 .....#.#..",
             );
-            assert_eq!(find_asteroid_with_best_visibility(input), 41);
+            assert_eq!(find_asteroid_with_best_visibility(&input).1, 41);
         }
         {
             let input = read_input(
@@ -284,7 +372,7 @@ mod tests {
 #.#.#.#####.####.###
 ###.##.####.##.#..##",
             );
-            assert_eq!(find_asteroid_with_best_visibility(input), 210);
+            assert_eq!(find_asteroid_with_best_visibility(&input).1, 210);
         }
     }
 
