@@ -1,4 +1,25 @@
-use intcode_computer::{Computer, IntCodeComputer};
+use crate::utils::read::read_list;
+use intcode_computer::{Computer, IntCodeComputer, IntcodeMemoryCellType, IntcodeMemoryType};
+use std::cell::RefCell;
+
+fn get_test_input() -> IntcodeMemoryType {
+    read_list(include_str!("./day9_input.txt"), ",")
+}
+
+pub fn run_boost_diagnostic() -> IntcodeMemoryCellType {
+    let mut memory = get_test_input();
+    memory.resize(memory.len() + 256, 0);
+    let output_container = RefCell::new(Vec::new());
+    let output_handle = |i| output_container.borrow_mut().push(i);
+    let computer = IntCodeComputer::new(memory, &output_handle);
+    computer.provide_input(1);
+    while computer.execute() {}
+    let outputs = output_container.into_inner();
+    match &outputs[..] {
+        [keycode] => *keycode,
+        list => panic!("diagnostic failed, outputs: {:?}", list),
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -48,5 +69,10 @@ mod tests {
         let computer = IntCodeComputer::new(program, &output_handle);
         while computer.execute() {}
         assert_eq!(output_container.into_inner(), 1125899906842624);
+    }
+
+    #[test]
+    fn test_correct_answer_part_1() {
+        assert_eq!(run_boost_diagnostic(), 2671328082);
     }
 }

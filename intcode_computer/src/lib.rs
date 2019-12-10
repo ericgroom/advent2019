@@ -99,11 +99,8 @@ impl<'a> IntCodeComputer<'a> {
                     self.interupted.replace(false);
                     let input_result = (self.input_buffer.borrow_mut().pop_front())
                         .expect("input buffer empty after interrupt");
-                    if let Parameter::Pointer(storage_index) = instruction.parameters[0] {
-                        memory[storage_index] = input_result;
-                    } else {
-                        panic!("attempting to store input result to value")
-                    }
+                    let storage_index = resolve_pointer(instruction.parameters[0], &relative_base);
+                    memory[storage_index] = input_result;
                 } else {
                     self.interupted.replace(true);
                     return false;
@@ -175,14 +172,10 @@ fn arithmetic_operation(
         dyn FnOnce(IntcodeMemoryCellType, IntcodeMemoryCellType) -> IntcodeMemoryCellType,
     >,
 ) {
-    // TODO: Also allow relative for storage?
-    if let Parameter::Pointer(storage_index) = instruction.parameters[2] {
-        let operand1 = resolve_value_in_memory(instruction.parameters[0], &memory, relative_base);
-        let operand2 = resolve_value_in_memory(instruction.parameters[1], &memory, relative_base);
-        memory[storage_index] = transform(operand1, operand2);
-    } else {
-        panic!("attempting to store arithmetic operation result to value");
-    }
+    let storage_index = resolve_pointer(instruction.parameters[2], relative_base);
+    let operand1 = resolve_value_in_memory(instruction.parameters[0], &memory, relative_base);
+    let operand2 = resolve_value_in_memory(instruction.parameters[1], &memory, relative_base);
+    memory[storage_index] = transform(operand1, operand2);
 }
 
 fn resolve_value_in_memory(
@@ -192,8 +185,15 @@ fn resolve_value_in_memory(
 ) -> IntcodeMemoryCellType {
     match parameter {
         Parameter::Value(value) => value,
-        Parameter::Pointer(index) => memory[index],
-        Parameter::Relative(offset) => memory[(offset + relative_base) as usize],
+        pointer => memory[resolve_pointer(pointer, relative_base)],
+    }
+}
+
+fn resolve_pointer(parameter: Parameter, relative_base: &IntcodeMemoryCellType) -> usize {
+    match parameter {
+        Parameter::Value(_) => panic!("attempting to access value as pointer"),
+        Parameter::Pointer(index) => index,
+        Parameter::Relative(offset) => (offset + relative_base) as usize,
     }
 }
 

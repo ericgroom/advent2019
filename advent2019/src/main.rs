@@ -53,4 +53,5 @@ fn main() {
     );
     println!("Image corruption check: {}", day8::ensure_no_corruption());
     print!("{}", day8::display_password());
+    println!("BOOST keycode: {}", day9::run_boost_diagnostic());
 }
