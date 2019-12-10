@@ -1,4 +1,5 @@
 mod day1;
+mod day10;
 mod day2;
 mod day3;
 mod day4;
@@ -57,5 +58,9 @@ fn main() {
     println!(
         "Ceres distress signal coords: {}",
         day9::get_distress_signal_coords()
+    );
+    println!(
+        "Best asteroid has visibility: {}",
+        day10::find_ideal_asteroid()
     );
 }
