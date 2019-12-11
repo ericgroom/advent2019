@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 
-#[derive(Debug, PartialEq, Eq, Copy, Clone, Hash)]
+#[derive(PartialEq, Eq, Copy, Clone, Hash)]
 pub struct Point {
     pub x: i32,
     pub y: i32,
@@ -9,15 +9,43 @@ pub struct Point {
 
 impl Point {
     fn slope(&self, other: Point) -> (i32, i32) {
-        (self.y - other.y, self.x - other.x)
+        // negate because y-axis is inverted
+        (-(self.y - other.y), self.x - other.x)
     }
 
     fn new(x: i32, y: i32) -> Point {
         Point { x: x, y: y }
     }
+
+    fn distance_between(&self, other: &Self) -> f64 {
+        (((self.x - other.x) * (self.x - other.x) + (self.y - other.y) * (self.y - other.y)) as f64)
+            .sqrt()
+    }
+
+    fn x_direction(&self, other: &Self) -> Sign {
+        if self.x > other.x {
+            Sign::Negative
+        } else if self.x == other.x {
+            if self.y > other.y {
+                Sign::Positive
+            } else if self.y == other.y {
+                panic!("same asteroid")
+            } else {
+                Sign::Negative
+            }
+        } else {
+            Sign::Positive
+        }
+    }
 }
 
-#[derive(PartialEq, Eq, Hash, Debug, PartialOrd)]
+impl std::fmt::Debug for Point {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "(x: {}, y: {})", self.x, self.y)
+    }
+}
+
+#[derive(PartialEq, Eq, Hash, Debug, PartialOrd, Copy, Clone)]
 enum Sign {
     Positive,
     Negative,
@@ -50,7 +78,7 @@ fn gcd(x: i32, y: i32) -> i32 {
     x
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, PartialOrd)]
+#[derive(Debug, PartialEq, Eq, Hash, PartialOrd, Copy, Clone)]
 struct SlopeInfo {
     dy: i32,
     dx: i32,
@@ -69,33 +97,27 @@ impl SlopeInfo {
 
 impl Ord for SlopeInfo {
     fn cmp(&self, other: &Self) -> Ordering {
-        // self is greater than other if
-        // self is a vertical line
-        // self has a steeper slope than other
-        // if other is on the same slope, differentite by x_direction
-        if self.dx == 0 {
-            if other.dy == 0 {
-                return self.x_direction.cmp(&other.x_direction);
-            } else {
-                return Ordering::Greater;
+        match self.x_direction.cmp(&other.x_direction) {
+            Ordering::Equal => {
+                if self.dx == other.dx && self.dy == other.dy {
+                    panic!("This should never happen as they wouldn't have the same visibility")
+                }
+                if self.dx == 0 && self.dy == 1 && other.dx == 1 && other.dy == 0 {
+                    return Ordering::Greater;
+                }
+                let self_slope = self.dy as f64 / self.dx as f64;
+                let other_slope = other.dy as f64 / other.dx as f64;
+                let epsilon = 0.001;
+                if (self_slope - other_slope).abs() < epsilon {
+                    Ordering::Equal
+                } else if self_slope > other_slope {
+                    Ordering::Greater
+                } else {
+                    Ordering::Less
+                }
             }
+            ordering => ordering,
         }
-        let self_slope = self.dy / self.dy;
-        let other_slope = other.dy as f64 / other.dx as f64;
-        if self.dy == 0 && other.dy == 0 {
-            return self.x_direction.cmp(&other.x_direction);
-        }
-        Ordering::Equal
-        // special cases
-        // 1. equal
-        // 2. horizontal line
-        // 3. vertical line
-        // Also need to enforce clockwise direction
-        // if self.dx == other.dx && self.dy == other.dy {
-        //     return self.x_direction.cmp(&other.x_direction);
-        // } else if self.dx == other.dx {
-        //     return self.dy.cmp(&other.dy);
-        // }
     }
 }
 
@@ -107,28 +129,25 @@ fn find_visible_asteroids(asteroid: &Point, set: &HashSet<Point>) -> HashMap<Slo
             continue;
         }
         let (dy, dx) = asteroid.slope(*candidate);
-        let direction = if asteroid.x > candidate.x {
-            Sign::Negative
-        } else if asteroid.x == candidate.x {
-            if asteroid.y > candidate.y {
-                Sign::Positive
-            } else if asteroid.y == candidate.y {
-                panic!("same asteroid")
+        let direction = asteroid.x_direction(&candidate);
+        let key = {
+            if dx == 0 {
+                SlopeInfo::new(1, 0, direction)
+            } else if dy == 0 {
+                SlopeInfo::new(0, 1, direction)
             } else {
-                Sign::Negative
+                let multiplier = if (dy < 0) && (dx < 0) { -1 } else { 1 };
+                let gcd = gcd(dy, dx);
+
+                SlopeInfo::new(dy / gcd * multiplier, dx / gcd * multiplier, direction)
             }
-        } else {
-            Sign::Positive
         };
-        if dx == 0 {
-            slope_map.insert(SlopeInfo::new(0, 0, direction), *candidate);
-        } else {
-            let gcd = gcd(dy, dx);
-            if gcd == 0 {
-                slope_map.insert(SlopeInfo::new(1, 0, direction), *candidate);
-            } else {
-                slope_map.insert(SlopeInfo::new(dy / gcd, dx / gcd, direction), *candidate);
-            }
+        let should_replace_key = match slope_map.get(&key) {
+            Some(point) => asteroid.distance_between(candidate) < asteroid.distance_between(point),
+            None => true,
+        };
+        if should_replace_key {
+            slope_map.insert(key, *candidate);
         }
     }
     slope_map
@@ -169,29 +188,34 @@ pub fn find_ideal_asteroid() -> usize {
     visibility
 }
 
-// find center node
-// find all visible nodes from that node
-// order ascending by slope and x direction
-// destroy nodes in that order
-// goto 2 with new set
-
-fn sort_visible_asteroids_by_slope(
-    central_asteroid: &Point,
-    others: &HashMap<SlopeInfo, Point>,
-) -> Vec<Point> {
-    vec![]
+fn sort_visible_asteroids_by_slope(others: &mut HashMap<SlopeInfo, Point>) -> Vec<Point> {
+    let mut result: Vec<_> = others.drain().collect();
+    result.sort_by(|a, b| a.0.cmp(&b.0).reverse()); // sort decending by SlopeInfo
+    result.drain(..).map(|entry| entry.1).collect()
 }
 
 fn get_destruction_order(asteroids: HashSet<Point>) -> Vec<Point> {
-    let result = Vec::with_capacity(asteroids.len());
+    let mut result = Vec::with_capacity(asteroids.len());
     let mut asteroids = asteroids;
     let (central_asteroid, _) = find_asteroid_with_best_visibility(&asteroids);
+    asteroids.remove(&central_asteroid);
     while !asteroids.is_empty() {
-        let visible_asteroids = find_visible_asteroids(&central_asteroid, &asteroids);
+        let mut visible_asteroids = find_visible_asteroids(&central_asteroid, &asteroids);
         let sorted_in_order_of_destruction =
-            sort_visible_asteroids_by_slope(&central_asteroid, &visible_asteroids);
+            sort_visible_asteroids_by_slope(&mut visible_asteroids);
+        for asteroid in sorted_in_order_of_destruction {
+            asteroids.remove(&asteroid);
+            result.push(asteroid);
+        }
     }
     result
+}
+
+pub fn get_two_hundredth() -> i32 {
+    let input = get_test_input();
+    let ordered = get_destruction_order(input);
+    let result = ordered[199];
+    result.x * 100 + result.y
 }
 
 #[cfg(test)]
@@ -201,7 +225,7 @@ mod tests {
     #[test]
     fn test_slope() {
         let (dy, dx) = Point::new(4, 0).slope(Point::new(3, 4));
-        assert_eq!(dy as f64 / dx as f64, -4.0);
+        assert_eq!(dy as f64 / dx as f64, 4.0);
     }
 
     #[test]
@@ -379,5 +403,87 @@ mod tests {
     #[test]
     fn test_correct_answer_part_1() {
         assert_eq!(find_ideal_asteroid(), 334)
+    }
+
+    #[test]
+    fn test_destruction_order() {
+        let input = read_input(
+            ".#....#####...#..
+##...##.#####..##
+##...#...#.#####.
+..#.....#...###..
+..#.#.....#....##",
+        );
+        let destruction_order = get_destruction_order(input);
+        assert_eq!(
+            destruction_order.into_iter().collect::<Vec<_>>(),
+            vec![
+                Point::new(8, 1),
+                Point::new(9, 0),
+                Point::new(9, 1),
+                Point::new(10, 0),
+                Point::new(9, 2),
+                Point::new(11, 1),
+                Point::new(12, 1),
+                Point::new(11, 2),
+                Point::new(15, 1),
+                Point::new(12, 2),
+                Point::new(13, 2),
+                Point::new(14, 2),
+                Point::new(15, 2),
+                Point::new(12, 3),
+                Point::new(16, 4),
+                Point::new(15, 4),
+                Point::new(10, 4),
+                Point::new(4, 4),
+                Point::new(2, 4),
+                Point::new(2, 3),
+                Point::new(0, 2),
+                Point::new(1, 2),
+                Point::new(0, 1),
+                Point::new(1, 1),
+                Point::new(5, 2),
+                Point::new(1, 0),
+                Point::new(5, 1),
+                Point::new(6, 1),
+                Point::new(6, 0),
+                Point::new(7, 0),
+                Point::new(8, 0),
+                Point::new(10, 1),
+                Point::new(14, 0),
+                Point::new(16, 1),
+                Point::new(13, 3),
+                Point::new(14, 3),
+            ]
+        )
+    }
+
+    #[test]
+    fn test_slope_info_order() {
+        {
+            let vertical_line = SlopeInfo::new(4, 0, Sign::Positive);
+            let positive_slope = SlopeInfo::new(2, 1, Sign::Positive);
+            assert_eq!(vertical_line.cmp(&positive_slope), Ordering::Greater);
+        }
+        {
+            let vertical_line_pos = SlopeInfo::new(4, 0, Sign::Positive);
+            let vertical_line_neg = SlopeInfo::new(4, 0, Sign::Negative);
+            assert_eq!(vertical_line_pos.cmp(&vertical_line_neg), Ordering::Greater);
+        }
+        {
+            let horizontal_line_pos = SlopeInfo::new(0, 4, Sign::Positive);
+            let neg_slope = SlopeInfo::new(1, -2, Sign::Negative);
+            assert_eq!(horizontal_line_pos.cmp(&neg_slope), Ordering::Greater);
+        }
+        {
+            let horizontal_line_pos = SlopeInfo::new(0, 1, Sign::Positive);
+            let vertical_line_pos = SlopeInfo::new(1, 0, Sign::Positive);
+            assert_eq!(horizontal_line_pos.cmp(&vertical_line_pos), Ordering::Less);
+        }
+    }
+
+    #[test]
+    fn test_correct_answer_part_2() {
+        assert_eq!(get_two_hundredth(), 1119);
     }
 }
