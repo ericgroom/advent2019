@@ -63,4 +63,5 @@ fn main() {
         "Best asteroid has visibility: {}",
         day10::find_ideal_asteroid()
     );
+    println!("200th: {}", day10::get_two_hundredth());
 }
