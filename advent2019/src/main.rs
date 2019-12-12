@@ -1,5 +1,6 @@
 mod day1;
 mod day10;
+mod day11;
 mod day2;
 mod day3;
 mod day4;
@@ -64,4 +65,5 @@ fn main() {
         day10::find_ideal_asteroid()
     );
     println!("200th: {}", day10::get_two_hundredth());
+    println!("Hull coverate: {}", day11::get_coverage());
 }

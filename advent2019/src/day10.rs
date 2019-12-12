@@ -1,25 +1,12 @@
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 
-#[derive(PartialEq, Eq, Copy, Clone, Hash)]
-pub struct Point {
-    pub x: i32,
-    pub y: i32,
-}
+use crate::utils::geometry::Point;
 
 impl Point {
     fn slope(&self, other: Point) -> (i32, i32) {
         // negate because y-axis is inverted
         (-(self.y - other.y), self.x - other.x)
-    }
-
-    fn new(x: i32, y: i32) -> Point {
-        Point { x: x, y: y }
-    }
-
-    fn distance_between(&self, other: &Self) -> f64 {
-        (((self.x - other.x) * (self.x - other.x) + (self.y - other.y) * (self.y - other.y)) as f64)
-            .sqrt()
     }
 
     fn x_direction(&self, other: &Self) -> Sign {
@@ -36,12 +23,6 @@ impl Point {
         } else {
             Sign::Positive
         }
-    }
-}
-
-impl std::fmt::Debug for Point {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "(x: {}, y: {})", self.x, self.y)
     }
 }
 
