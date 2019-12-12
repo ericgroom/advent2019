@@ -193,7 +193,6 @@ mod tests {
 
     #[test]
     fn test_walking_the_robot() {
-        // only thing modified from assembly is making the JumpIfFalse take an immediate address (current bug)
         let test_program = vec![1, 0, 0, 0, 3, 0, 104, 1, 104, 1, 1006, 0, 4, 99];
         let painted_hull = take_the_robot_for_a_walk(test_program, ShipHull::new());
         assert_eq!(painted_hull.position_color_map.len(), 4);

@@ -32,8 +32,8 @@ pub fn assemble(code: &str) -> IntcodeMemoryType {
                 let parameter_modes: Vec<ParameterMode> = params
                     .iter()
                     .map(|token| match token {
-                        Token::Immediate(_) => ParameterMode::Value,
-                        Token::Int(_) | Token::LabelReference(_) => ParameterMode::Pointer,
+                        Token::Immediate(_) | Token::LabelReference(_) => ParameterMode::Value,
+                        Token::Int(_) => ParameterMode::Pointer,
                         _ => panic!("not a parmeter"),
                     })
                     .collect();
