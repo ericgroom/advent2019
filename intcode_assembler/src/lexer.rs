@@ -1,10 +1,11 @@
 use intcode_computer::operations::Operation;
+use intcode_computer::IntcodeMemoryCellType;
 
 #[derive(Debug)]
 pub enum Token {
     LabelDefinition(String),
-    Int(i32),
-    Immediate(i32),
+    Int(IntcodeMemoryCellType),
+    Immediate(IntcodeMemoryCellType),
     LabelReference(String),
     Operation(Operation),
 }

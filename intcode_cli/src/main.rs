@@ -1,6 +1,6 @@
 use clap::{App, Arg, SubCommand};
 use intcode_assembler::assemble;
-use intcode_computer::{Computer, IntCodeComputer};
+use intcode_computer::{Computer, IntCodeComputer, IntcodeMemoryCellType, IntcodeMemoryType};
 use std::fs::{read_to_string, write};
 use std::io;
 
@@ -69,17 +69,17 @@ fn build(input_file: &str, output_file: &str) {
 
 fn run(input_file: &str) {
     let intcode_str = read_to_string(input_file).expect("Invalid input file");
-    let intcode: Vec<i32> = intcode_str.split(',').map(|s| s.parse().unwrap()).collect();
+    let intcode: IntcodeMemoryType = intcode_str.split(',').map(|s| s.parse().unwrap()).collect();
     let output_handler = |output| println!("{}", output);
     let computer = IntCodeComputer::new(intcode, &output_handler);
     let mut str_buffer = String::new();
-    let mut int_buffer: Vec<i32> = Vec::new();
+    let mut int_buffer: IntcodeMemoryType = Vec::new();
     while computer.execute() {
         while int_buffer.is_empty() {
             match io::stdin().read_line(&mut str_buffer) {
                 Ok(_) => {
                     for maybe_int in str_buffer.lines() {
-                        if let Some(input) = maybe_int.parse::<i32>().ok() {
+                        if let Some(input) = maybe_int.parse::<IntcodeMemoryCellType>().ok() {
                             int_buffer.push(input);
                         }
                     }

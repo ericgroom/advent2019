@@ -1,5 +1,6 @@
 use intcode_computer::operations::OpCode;
 use intcode_computer::parameter::ParameterMode;
+use intcode_computer::{IntcodeMemoryCellType, IntcodeMemoryType};
 use std::collections::HashMap;
 
 mod lexer;
@@ -7,11 +8,11 @@ mod lexer;
 use lexer::{tokenize, Token};
 
 enum Temp {
-    Resolved(i32),
+    Resolved(IntcodeMemoryCellType),
     LabelReference(String),
 }
 
-pub fn assemble(code: &str) -> Vec<i32> {
+pub fn assemble(code: &str) -> IntcodeMemoryType {
     let mut result: Vec<Temp> = Vec::new();
     let mut address_map: HashMap<String, usize> = HashMap::new();
     let tokens = tokenize(code);
@@ -63,7 +64,7 @@ pub fn assemble(code: &str) -> Vec<i32> {
             Temp::LabelReference(label) => *address_map
                 .get(label)
                 .expect(&format!("label: '{}' not found", label))
-                as i32,
+                as IntcodeMemoryCellType,
         })
         .collect()
 }
