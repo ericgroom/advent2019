@@ -27,3 +27,20 @@ pub enum CardinalDirection {
     South,
     West,
 }
+
+pub fn render_image(image: Vec<i32>, row_width: usize) -> String {
+    let mut result = String::new();
+    for row in image.chunks(row_width) {
+        for pixel in row {
+            let c = match pixel {
+                0 => '█',
+                1 => ' ',
+                2 => 't',
+                _ => panic!("pixel other than 0, 1, 2"),
+            };
+            result.push(c)
+        }
+        result.push('\n')
+    }
+    result
+}

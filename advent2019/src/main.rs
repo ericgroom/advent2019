@@ -66,4 +66,5 @@ fn main() {
     );
     println!("200th: {}", day10::get_two_hundredth());
     println!("Hull coverate: {}", day11::get_coverage());
+    println!("{}", day11::get_registration_identifier());
 }

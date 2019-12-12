@@ -1,3 +1,4 @@
+use crate::utils::geometry::render_image;
 use crate::utils::geometry::{CardinalDirection, Point};
 use crate::utils::read::read_list;
 use intcode_computer::{Computer, IntCodeComputer, IntcodeMemoryCellType, IntcodeMemoryType};
@@ -42,10 +43,7 @@ impl ShipHull {
         let current_value = { self.position_color_map.get(point) };
         match current_value {
             Some(color) => color,
-            None => self
-                .position_color_map
-                .get(point)
-                .get_or_insert(&Color::Black),
+            None => self.position_color_map.get(point).unwrap_or(&Color::Black),
         }
     }
 
@@ -75,9 +73,9 @@ impl EmergencyPaintingRobot {
     }
     fn advance(&mut self) -> &Point {
         let new_location = match self.facing {
-            CardinalDirection::North => Point::new(self.location.x, self.location.y + 1),
+            CardinalDirection::North => Point::new(self.location.x, self.location.y - 1),
             CardinalDirection::East => Point::new(self.location.x + 1, self.location.y),
-            CardinalDirection::South => Point::new(self.location.x, self.location.y - 1),
+            CardinalDirection::South => Point::new(self.location.x, self.location.y + 1),
             CardinalDirection::West => Point::new(self.location.x - 1, self.location.y),
         };
         self.location = new_location;
@@ -107,12 +105,12 @@ impl EmergencyPaintingRobot {
     }
 }
 
-fn take_the_robot_for_a_walk(software: IntcodeMemoryType) -> ShipHull {
+fn take_the_robot_for_a_walk(software: IntcodeMemoryType, hull: ShipHull) -> ShipHull {
     let output_buffer = RefCell::new(VecDeque::new());
     let output_handler = |i| output_buffer.borrow_mut().push_back(i);
     let computer = IntCodeComputer::new(software, &output_handler);
     let mut robot = EmergencyPaintingRobot::new();
-    let mut hull = ShipHull::new();
+    let mut hull = hull;
 
     let current_color = hull.get_color(&robot.location);
     computer.provide_input((*current_color).into());
@@ -144,8 +142,49 @@ fn get_test_input() -> IntcodeMemoryType {
 pub fn get_coverage() -> usize {
     let mut software = get_test_input();
     software.resize(2000, 0);
-    let hull = take_the_robot_for_a_walk(software);
+    let hull = take_the_robot_for_a_walk(software, ShipHull::new());
     hull.position_color_map.len()
+}
+
+pub fn get_registration_identifier() -> String {
+    let mut hull = ShipHull::new();
+    let mut software = get_test_input();
+    software.resize(2000, 0);
+    hull.paint(Point::new(0, 0), Color::White);
+    let painted_hull = take_the_robot_for_a_walk(software, hull);
+
+    let (mut min_x, mut min_y, mut max_x, mut max_y) = (0, 0, 0, 0);
+    for point in painted_hull.position_color_map.keys() {
+        if point.x < min_x {
+            min_x = point.x
+        }
+        if point.x > max_x {
+            max_x = point.x
+        }
+        if point.y < min_y {
+            min_y = point.y
+        }
+        if point.y > max_y {
+            max_y = point.y
+        }
+    }
+    let y_shift = if min_y < 0 { -min_y } else { 0 };
+    let x_shift = if min_x < 0 { -min_x } else { 0 };
+    let width = max_x - min_x;
+    let mut result: Vec<i32> = Vec::new();
+    println!(
+        "resizing to {}",
+        ((max_x + x_shift) * (max_y + y_shift)) as usize
+    );
+    result.resize(((max_x + x_shift + 1) * (max_y + y_shift + 1)) as usize, 0);
+    for (point, color) in painted_hull.position_color_map {
+        let index = (width * (point.y + y_shift) + (point.x + x_shift)) as usize;
+        result[index] = match color {
+            Color::Black => 0,
+            Color::White => 1,
+        }
+    }
+    render_image(result, width as usize)
 }
 
 #[cfg(test)]
@@ -156,12 +195,27 @@ mod tests {
     fn test_walking_the_robot() {
         // only thing modified from assembly is making the JumpIfFalse take an immediate address (current bug)
         let test_program = vec![1, 0, 0, 0, 3, 0, 104, 1, 104, 1, 1006, 0, 4, 99];
-        let painted_hull = take_the_robot_for_a_walk(test_program);
+        let painted_hull = take_the_robot_for_a_walk(test_program, ShipHull::new());
         assert_eq!(painted_hull.position_color_map.len(), 4);
     }
 
     #[test]
     fn test_correct_answer_part_1() {
         assert_eq!(get_coverage(), 1681);
+    }
+
+    #[test]
+    fn test_correct_answer_part_2() {
+        assert_eq!(
+            get_registration_identifier(),
+            "█    ██  ██    ██  ██   ██ ██ ██  ██ ██ ██
+█ ████ ██ ████ █ ██ █ ██ █ █ ██ ██ █ █ ███
+█   ██ ██████ ██ ████ ██ █  ███ ████  ████
+█ ████ █  ██ ███ ████   ██ █ ██ █  █ █ ███
+█ ████ ██ █ ████ ██ █ █ ██ █ ██ ██ █ █ ███
+█    ██   █    ██  ██ ██ █ ██ ██   █ ██ ██
+██████
+"
+        )
     }
 }

@@ -1,3 +1,4 @@
+use crate::utils::geometry::render_image;
 use crate::utils::read::read_list;
 
 fn split_into_layers(image_data: Vec<i32>, area: usize) -> Vec<Vec<i32>> {
@@ -53,23 +54,6 @@ fn resolve_image_layers(layers: Vec<Vec<i32>>) -> Vec<i32> {
                 _ => panic!("Value other than 0, 1, 2"),
             }
         }
-    }
-    result
-}
-
-fn render_image(image: Vec<i32>, row_width: usize) -> String {
-    let mut result = String::new();
-    for row in image.chunks(row_width) {
-        for pixel in row {
-            let c = match pixel {
-                0 => '█',
-                1 => ' ',
-                2 => 't',
-                _ => panic!("pixel other than 0, 1, 2"),
-            };
-            result.push(c)
-        }
-        result.push('\n')
     }
     result
 }
