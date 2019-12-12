@@ -172,10 +172,6 @@ pub fn get_registration_identifier() -> String {
     let x_shift = if min_x < 0 { -min_x } else { 0 };
     let width = max_x - min_x;
     let mut result: Vec<i32> = Vec::new();
-    println!(
-        "resizing to {}",
-        ((max_x + x_shift) * (max_y + y_shift)) as usize
-    );
     result.resize(((max_x + x_shift + 1) * (max_y + y_shift + 1)) as usize, 0);
     for (point, color) in painted_hull.position_color_map {
         let index = (width * (point.y + y_shift) + (point.x + x_shift)) as usize;

@@ -3,12 +3,7 @@ use crate::utils::physics::{PhysicsObject, PhysicsObject3D};
 
 fn run_simulation(duration: usize, objects: Vec<PhysicsObject3D>) -> Vec<PhysicsObject3D> {
     let mut result = objects.clone();
-    println!("Starting simulation with: {:?}", result);
     for time in 0..duration {
-        println!("T{}", time);
-        for obj in &result {
-            println!("{:?}", obj);
-        }
         // update 'gravity'
         let mut accelerations = Vec::new();
         for i in 0..result.len() {
@@ -62,9 +57,21 @@ fn calculate_energy(object: PhysicsObject3D) -> i32 {
     potential * kinetic
 }
 
-fn get_test_input() {}
+fn get_test_input() -> Vec<PhysicsObject3D> {
+    vec![
+        PhysicsObject3D::with_initial_position(Vec3D::new(7, 10, 17)),
+        PhysicsObject3D::with_initial_position(Vec3D::new(-2, 7, 0)),
+        PhysicsObject3D::with_initial_position(Vec3D::new(12, 5, 12)),
+        PhysicsObject3D::with_initial_position(Vec3D::new(5, -8, 6)),
+    ]
+}
 
-pub fn get_moons_simulation() {}
+pub fn get_moons_simulation() -> i32 {
+    let input = get_test_input();
+    let result = run_simulation(1000, input);
+    let total_energy: i32 = result.into_iter().map(calculate_energy).sum();
+    total_energy
+}
 
 #[cfg(test)]
 mod tests {
@@ -81,5 +88,10 @@ mod tests {
         let after_simulation = run_simulation(10, initial_objects);
         let total_energy: i32 = after_simulation.into_iter().map(calculate_energy).sum();
         assert_eq!(total_energy, 179);
+    }
+
+    #[test]
+    fn test_correct_answer_part_1() {
+        assert_eq!(get_moons_simulation(), 9958);
     }
 }
