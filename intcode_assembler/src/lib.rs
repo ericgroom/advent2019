@@ -16,7 +16,6 @@ pub fn assemble(code: &str) -> IntcodeMemoryType {
     let mut result: Vec<Temp> = Vec::new();
     let mut address_map: HashMap<String, usize> = HashMap::new();
     let tokens = tokenize(code);
-    println!("{:?}", tokens);
     let mut tokens_iter = tokens.iter();
     while let Some(token) = tokens_iter.next() {
         match token {
@@ -58,7 +57,6 @@ pub fn assemble(code: &str) -> IntcodeMemoryType {
             _ => panic!("unexpected token"),
         }
     }
-    println!("{:?}", address_map);
     result
         .iter()
         .map(|token| match token {

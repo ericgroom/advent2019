@@ -31,7 +31,6 @@ fn parse_label_definition(label: &str) -> Option<String> {
     let stripped = label.trim();
     if let Some(label) = parse_label(&stripped[..stripped.len() - 1]) {
         if stripped.ends_with(':') {
-            println!("here label: {}, stripped: {}", label, &stripped[..]);
             return Some(label.to_string());
         }
     }
@@ -40,7 +39,6 @@ fn parse_label_definition(label: &str) -> Option<String> {
 
 fn parse_label(label: &str) -> Option<String> {
     let stripped = label.trim();
-    println!("inside label: {}, stripped: {}", label, stripped);
 
     if !stripped.is_empty()
         && stripped.chars().all(|c| c.is_alphanumeric())

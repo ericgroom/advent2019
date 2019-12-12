@@ -1,7 +1,7 @@
 ADD 0 0 0
 main:
-READ 0
-WRITE ^1
-WRITE ^1
-JIF 0 main
+    READ 0
+    WRITE ^1
+    WRITE ^1
+    JIF 0 main
 HALT
