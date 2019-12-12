@@ -1,10 +1,10 @@
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 
-use crate::utils::geometry::Point;
+use crate::utils::geometry::Vec2D;
 
-impl Point {
-    fn slope(&self, other: Point) -> (i32, i32) {
+impl Vec2D {
+    fn slope(&self, other: Vec2D) -> (i32, i32) {
         // negate because y-axis is inverted
         (-(self.y - other.y), self.x - other.x)
     }
@@ -102,9 +102,9 @@ impl Ord for SlopeInfo {
     }
 }
 
-fn find_visible_asteroids(asteroid: &Point, set: &HashSet<Point>) -> HashMap<SlopeInfo, Point> {
+fn find_visible_asteroids(asteroid: &Vec2D, set: &HashSet<Vec2D>) -> HashMap<SlopeInfo, Vec2D> {
     // using Sign here as direction in the x axis
-    let mut slope_map: HashMap<SlopeInfo, Point> = HashMap::new();
+    let mut slope_map: HashMap<SlopeInfo, Vec2D> = HashMap::new();
     for candidate in set {
         if asteroid.x == candidate.x && asteroid.y == candidate.y {
             continue;
@@ -134,7 +134,7 @@ fn find_visible_asteroids(asteroid: &Point, set: &HashSet<Point>) -> HashMap<Slo
     slope_map
 }
 
-fn find_asteroid_with_best_visibility(asteroids: &HashSet<Point>) -> (Point, usize) {
+fn find_asteroid_with_best_visibility(asteroids: &HashSet<Vec2D>) -> (Vec2D, usize) {
     let mut max_count = 0;
     let mut max_asteroid = None;
     for asteroid in asteroids {
@@ -147,19 +147,19 @@ fn find_asteroid_with_best_visibility(asteroids: &HashSet<Point>) -> (Point, usi
     (*max_asteroid.unwrap(), max_count)
 }
 
-fn read_input(s: &str) -> HashSet<Point> {
+fn read_input(s: &str) -> HashSet<Vec2D> {
     let mut result = HashSet::new();
     for (y, line) in s.lines().enumerate() {
         for (x, c) in line.chars().enumerate() {
             if c == '#' {
-                result.insert(Point::new(x as i32, y as i32));
+                result.insert(Vec2D::new(x as i32, y as i32));
             }
         }
     }
     result
 }
 
-fn get_test_input() -> HashSet<Point> {
+fn get_test_input() -> HashSet<Vec2D> {
     read_input(include_str!("day10_input.txt"))
 }
 
@@ -169,13 +169,13 @@ pub fn find_ideal_asteroid() -> usize {
     visibility
 }
 
-fn sort_visible_asteroids_by_slope(others: &mut HashMap<SlopeInfo, Point>) -> Vec<Point> {
+fn sort_visible_asteroids_by_slope(others: &mut HashMap<SlopeInfo, Vec2D>) -> Vec<Vec2D> {
     let mut result: Vec<_> = others.drain().collect();
     result.sort_by(|a, b| a.0.cmp(&b.0).reverse()); // sort decending by SlopeInfo
     result.drain(..).map(|entry| entry.1).collect()
 }
 
-fn get_destruction_order(asteroids: HashSet<Point>) -> Vec<Point> {
+fn get_destruction_order(asteroids: HashSet<Vec2D>) -> Vec<Vec2D> {
     let mut result = Vec::with_capacity(asteroids.len());
     let mut asteroids = asteroids;
     let (central_asteroid, _) = find_asteroid_with_best_visibility(&asteroids);
@@ -205,7 +205,7 @@ mod tests {
 
     #[test]
     fn test_slope() {
-        let (dy, dx) = Point::new(4, 0).slope(Point::new(3, 4));
+        let (dy, dx) = Vec2D::new(4, 0).slope(Vec2D::new(3, 4));
         assert_eq!(dy as f64 / dx as f64, 4.0);
     }
 
@@ -220,16 +220,16 @@ mod tests {
     #[test]
     fn test_find_number_of_visible_asteroids() {
         let mut points = vec![
-            Point::new(1, 0),
-            Point::new(4, 0),
-            Point::new(0, 2),
-            Point::new(1, 2),
-            Point::new(2, 2),
-            Point::new(3, 2),
-            Point::new(4, 2),
-            Point::new(4, 3),
-            Point::new(3, 4),
-            Point::new(4, 4),
+            Vec2D::new(1, 0),
+            Vec2D::new(4, 0),
+            Vec2D::new(0, 2),
+            Vec2D::new(1, 2),
+            Vec2D::new(2, 2),
+            Vec2D::new(3, 2),
+            Vec2D::new(4, 2),
+            Vec2D::new(4, 3),
+            Vec2D::new(3, 4),
+            Vec2D::new(4, 4),
         ];
         let mut points_set = HashSet::new();
         for point in points.drain(..) {
@@ -237,43 +237,43 @@ mod tests {
         }
 
         assert_eq!(
-            find_visible_asteroids(&Point::new(1, 0), &points_set).len(),
+            find_visible_asteroids(&Vec2D::new(1, 0), &points_set).len(),
             7
         );
         assert_eq!(
-            find_visible_asteroids(&Point::new(4, 0), &points_set).len(),
+            find_visible_asteroids(&Vec2D::new(4, 0), &points_set).len(),
             7
         );
         assert_eq!(
-            find_visible_asteroids(&Point::new(0, 2), &points_set).len(),
+            find_visible_asteroids(&Vec2D::new(0, 2), &points_set).len(),
             6
         );
         assert_eq!(
-            find_visible_asteroids(&Point::new(1, 2), &points_set).len(),
+            find_visible_asteroids(&Vec2D::new(1, 2), &points_set).len(),
             7
         );
         assert_eq!(
-            find_visible_asteroids(&Point::new(2, 2), &points_set).len(),
+            find_visible_asteroids(&Vec2D::new(2, 2), &points_set).len(),
             7
         );
         assert_eq!(
-            find_visible_asteroids(&Point::new(3, 2), &points_set).len(),
+            find_visible_asteroids(&Vec2D::new(3, 2), &points_set).len(),
             7
         );
         assert_eq!(
-            find_visible_asteroids(&Point::new(4, 2), &points_set).len(),
+            find_visible_asteroids(&Vec2D::new(4, 2), &points_set).len(),
             5
         );
         assert_eq!(
-            find_visible_asteroids(&Point::new(4, 3), &points_set).len(),
+            find_visible_asteroids(&Vec2D::new(4, 3), &points_set).len(),
             7
         );
         assert_eq!(
-            find_visible_asteroids(&Point::new(3, 4), &points_set).len(),
+            find_visible_asteroids(&Vec2D::new(3, 4), &points_set).len(),
             8
         );
         assert_eq!(
-            find_visible_asteroids(&Point::new(4, 4), &points_set).len(),
+            find_visible_asteroids(&Vec2D::new(4, 4), &points_set).len(),
             7
         );
     }
@@ -282,16 +282,16 @@ mod tests {
     fn test_read_input() {
         let expected = {
             let mut points = vec![
-                Point::new(1, 0),
-                Point::new(4, 0),
-                Point::new(0, 2),
-                Point::new(1, 2),
-                Point::new(2, 2),
-                Point::new(3, 2),
-                Point::new(4, 2),
-                Point::new(4, 3),
-                Point::new(3, 4),
-                Point::new(4, 4),
+                Vec2D::new(1, 0),
+                Vec2D::new(4, 0),
+                Vec2D::new(0, 2),
+                Vec2D::new(1, 2),
+                Vec2D::new(2, 2),
+                Vec2D::new(3, 2),
+                Vec2D::new(4, 2),
+                Vec2D::new(4, 3),
+                Vec2D::new(3, 4),
+                Vec2D::new(4, 4),
             ];
             let mut points_set = HashSet::new();
             for point in points.drain(..) {
@@ -399,42 +399,42 @@ mod tests {
         assert_eq!(
             destruction_order.into_iter().collect::<Vec<_>>(),
             vec![
-                Point::new(8, 1),
-                Point::new(9, 0),
-                Point::new(9, 1),
-                Point::new(10, 0),
-                Point::new(9, 2),
-                Point::new(11, 1),
-                Point::new(12, 1),
-                Point::new(11, 2),
-                Point::new(15, 1),
-                Point::new(12, 2),
-                Point::new(13, 2),
-                Point::new(14, 2),
-                Point::new(15, 2),
-                Point::new(12, 3),
-                Point::new(16, 4),
-                Point::new(15, 4),
-                Point::new(10, 4),
-                Point::new(4, 4),
-                Point::new(2, 4),
-                Point::new(2, 3),
-                Point::new(0, 2),
-                Point::new(1, 2),
-                Point::new(0, 1),
-                Point::new(1, 1),
-                Point::new(5, 2),
-                Point::new(1, 0),
-                Point::new(5, 1),
-                Point::new(6, 1),
-                Point::new(6, 0),
-                Point::new(7, 0),
-                Point::new(8, 0),
-                Point::new(10, 1),
-                Point::new(14, 0),
-                Point::new(16, 1),
-                Point::new(13, 3),
-                Point::new(14, 3),
+                Vec2D::new(8, 1),
+                Vec2D::new(9, 0),
+                Vec2D::new(9, 1),
+                Vec2D::new(10, 0),
+                Vec2D::new(9, 2),
+                Vec2D::new(11, 1),
+                Vec2D::new(12, 1),
+                Vec2D::new(11, 2),
+                Vec2D::new(15, 1),
+                Vec2D::new(12, 2),
+                Vec2D::new(13, 2),
+                Vec2D::new(14, 2),
+                Vec2D::new(15, 2),
+                Vec2D::new(12, 3),
+                Vec2D::new(16, 4),
+                Vec2D::new(15, 4),
+                Vec2D::new(10, 4),
+                Vec2D::new(4, 4),
+                Vec2D::new(2, 4),
+                Vec2D::new(2, 3),
+                Vec2D::new(0, 2),
+                Vec2D::new(1, 2),
+                Vec2D::new(0, 1),
+                Vec2D::new(1, 1),
+                Vec2D::new(5, 2),
+                Vec2D::new(1, 0),
+                Vec2D::new(5, 1),
+                Vec2D::new(6, 1),
+                Vec2D::new(6, 0),
+                Vec2D::new(7, 0),
+                Vec2D::new(8, 0),
+                Vec2D::new(10, 1),
+                Vec2D::new(14, 0),
+                Vec2D::new(16, 1),
+                Vec2D::new(13, 3),
+                Vec2D::new(14, 3),
             ]
         )
     }
