@@ -7,6 +7,7 @@ pub enum Token {
     Int(IntcodeMemoryCellType),
     Immediate(IntcodeMemoryCellType),
     LabelReference(String),
+    RelativeReference(IntcodeMemoryCellType),
     Operation(Operation),
 }
 
@@ -20,6 +21,7 @@ fn parse_operation(instr: &str) -> Option<Operation> {
         "JIF" => Some(Operation::JumpIfFalse),
         "LT" => Some(Operation::LessThan),
         "GT" => Some(Operation::Equals),
+        "REL" => Some(Operation::AdjustRelativeBase),
         "HALT" => Some(Operation::Halt),
         _ => None,
     }
@@ -67,6 +69,11 @@ fn parse_instruction(line: &str) -> Option<Vec<Token>> {
 fn parse_parameter(parameter: &str) -> Option<Token> {
     if parameter.to_ascii_lowercase().starts_with('^') {
         parameter[1..].parse().ok().map(|i| Token::Immediate(i))
+    } else if parameter.to_ascii_lowercase().starts_with('~') {
+        parameter[1..]
+            .parse()
+            .ok()
+            .map(|i| Token::RelativeReference(i))
     } else if let Some(label) = parse_label(parameter) {
         Some(Token::LabelReference(label))
     } else {

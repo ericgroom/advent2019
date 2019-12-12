@@ -34,6 +34,7 @@ pub fn assemble(code: &str) -> IntcodeMemoryType {
                     .map(|token| match token {
                         Token::Immediate(_) | Token::LabelReference(_) => ParameterMode::Value,
                         Token::Int(_) => ParameterMode::Pointer,
+                        Token::RelativeReference(_) => ParameterMode::Relative,
                         _ => panic!("not a parmeter"),
                     })
                     .collect();
@@ -44,8 +45,9 @@ pub fn assemble(code: &str) -> IntcodeMemoryType {
                 result.push(Temp::Resolved(opcode.into()));
                 for token in params {
                     match token {
-                        Token::Immediate(i) => result.push(Temp::Resolved(*i)),
-                        Token::Int(i) => result.push(Temp::Resolved(*i)),
+                        Token::Immediate(i) | Token::Int(i) | Token::RelativeReference(i) => {
+                            result.push(Temp::Resolved(*i))
+                        }
                         Token::LabelReference(label) => {
                             result.push(Temp::LabelReference(label.clone()))
                         }
@@ -99,6 +101,12 @@ mod tests {
     #[test]
     fn test_label_reference() {
         let program = "main:\nADD 2 1 2\nJIT 1 main";
-        assert_eq!(assemble(program), vec![1, 2, 1, 2, 5, 1, 0]);
+        assert_eq!(assemble(program), vec![1, 2, 1, 2, 1005, 1, 0]);
+    }
+
+    #[test]
+    fn test_relative_mode() {
+        let program = "ADD ~-1 ~1 ~0";
+        assert_eq!(assemble(program), vec![22201, -1, 1, 0]);
     }
 }
