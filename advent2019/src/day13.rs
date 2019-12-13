@@ -1,4 +1,4 @@
-use crate::utils::geometry::{render_image, Vec2D};
+use crate::utils::geometry::{convert_map_to_grid, render_image, Vec2D};
 use crate::utils::read::read_list;
 use intcode_computer::{Computer, IntCodeComputer, IntcodeMemoryCellType, IntcodeMemoryType};
 use std::cell::RefCell;
@@ -21,7 +21,19 @@ impl From<i64> for Entity {
             2 => Self::Block,
             3 => Self::HorizontalPaddle,
             4 => Self::Ball,
-            x => panic!("Tile id: {} does not exist", tile_id),
+            _ => panic!("Tile id: {} does not exist", tile_id),
+        }
+    }
+}
+
+impl Into<i64> for Entity {
+    fn into(self) -> i64 {
+        match self {
+            Self::Empty => 0,
+            Self::Wall => 1,
+            Self::Block => 2,
+            Self::HorizontalPaddle => 3,
+            Self::Ball => 4,
         }
     }
 }
@@ -43,18 +55,60 @@ pub fn count_blocks() -> usize {
     let mut input = get_test_input();
     input.resize(3000, 0);
     let computer_output = run_game(input);
-    assert_eq!(computer_output.len() % 3, 0);
+    let (_, map) = output_to_map(&computer_output);
+    map.values()
+        .cloned()
+        .filter(|tile| *tile == Entity::Block)
+        .count()
+}
+
+fn output_to_map(output: &IntcodeMemoryType) -> (i64, HashMap<Vec2D, Entity>) {
+    assert_eq!(output.len() % 3, 0);
+    let mut score = 0;
     let mut grid = HashMap::new();
-    for tile in computer_output[..].chunks(3) {
+    for tile in output[..].chunks(3) {
         let (x, y, tile_id) = (tile[0], tile[1], tile[2]);
+        if x == -1 && y == 0 {
+            score += tile_id;
+            continue;
+        }
         let point = Vec2D::new(x as i32, y as i32);
         let tile = Entity::from(tile_id);
         grid.insert(point, tile);
     }
-    grid.values()
-        .cloned()
-        .filter(|tile| *tile == Entity::Block)
-        .count()
+    (score, grid)
+}
+
+pub fn play_game() {
+    let mut game = get_test_input();
+    game.resize(3000, 0);
+    game[0] = 2;
+    let output_container = RefCell::new(Vec::new());
+    let output_handle = |i| output_container.borrow_mut().push(i);
+    let computer = IntCodeComputer::new(game, &output_handle);
+    while computer.execute() {
+        computer.provide_input(0);
+        let output = output_container.borrow_mut();
+        if !output.is_empty() {
+            let (score, map) = output_to_map(&output);
+            let convert_entity = |entity| Into::<i64>::into(entity) as i32;
+            let (width, grid) = convert_map_to_grid(map, 0, Box::new(convert_entity));
+            let frame = render_image(grid, width, Box::new(render_pixel));
+            println!("score: {}", score);
+            println!("{}", frame);
+        }
+    }
+}
+
+fn render_pixel(value: &i32) -> char {
+    match value {
+        0 => ' ',
+        1 => '|',
+        2 => '█',
+        3 => '_',
+        4 => '•',
+        _ => panic!("Cannot render {} as pixel", value),
+    }
 }
 
 #[cfg(test)]

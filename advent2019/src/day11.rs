@@ -1,4 +1,4 @@
-use crate::utils::geometry::render_image;
+use crate::utils::geometry::{convert_map_to_grid, render_image};
 use crate::utils::geometry::{CardinalDirection, Vec2D};
 use crate::utils::read::read_list;
 use intcode_computer::{Computer, IntCodeComputer, IntcodeMemoryCellType, IntcodeMemoryType};
@@ -152,35 +152,10 @@ pub fn get_registration_identifier() -> String {
     software.resize(2000, 0);
     hull.paint(Vec2D::new(0, 0), Color::White);
     let painted_hull = take_the_robot_for_a_walk(software, hull);
-
-    let (mut min_x, mut min_y, mut max_x, mut max_y) = (0, 0, 0, 0);
-    for point in painted_hull.position_color_map.keys() {
-        if point.x < min_x {
-            min_x = point.x
-        }
-        if point.x > max_x {
-            max_x = point.x
-        }
-        if point.y < min_y {
-            min_y = point.y
-        }
-        if point.y > max_y {
-            max_y = point.y
-        }
-    }
-    let y_shift = if min_y < 0 { -min_y } else { 0 };
-    let x_shift = if min_x < 0 { -min_x } else { 0 };
-    let width = max_x - min_x;
-    let mut result: Vec<i32> = Vec::new();
-    result.resize(((max_x + x_shift + 1) * (max_y + y_shift + 1)) as usize, 0);
-    for (point, color) in painted_hull.position_color_map {
-        let index = (width * (point.y + y_shift) + (point.x + x_shift)) as usize;
-        result[index] = match color {
-            Color::Black => 0,
-            Color::White => 1,
-        }
-    }
-    render_image(result, width as usize, Box::new(render_pixel))
+    let convert_color = |color| Into::<i64>::into(color) as i32;
+    let (width, grid) =
+        convert_map_to_grid(painted_hull.position_color_map, 0, Box::new(convert_color));
+    render_image(grid, width, Box::new(render_pixel))
 }
 
 fn render_pixel(value: &i32) -> char {
