@@ -89,7 +89,7 @@ pub fn find_repetition(objects: Vec<PhysicsObject3D>) -> i64 {
         .map(|o| (o.position.z, o.velocity.z))
         .collect();
 
-    let mut phases = vec![None, None, None];
+    let mut periods_xyz = (None, None, None);
 
     let mut time = 1;
     loop {
@@ -105,58 +105,42 @@ pub fn find_repetition(objects: Vec<PhysicsObject3D>) -> i64 {
             continue;
         }
 
-        if phases[0].is_none() {
+        if periods_xyz.0.is_none() {
             let xs: Vec<_> = result
                 .iter()
                 .map(|o| (o.position.x, o.velocity.x))
                 .collect();
-            if compare(&xs, &initial_xs) {
-                phases[0] = Some(time)
+            if xs == initial_xs {
+                periods_xyz.0 = Some(time)
             }
         }
 
-        if phases[1].is_none() {
+        if periods_xyz.1.is_none() {
             let ys: Vec<_> = result
                 .iter()
                 .map(|o| (o.position.y, o.velocity.y))
                 .collect();
-            if compare(&ys, &initial_ys) {
-                phases[1] = Some(time)
+            if ys == initial_ys {
+                periods_xyz.1 = Some(time)
             }
         }
 
-        if phases[2].is_none() {
+        if periods_xyz.2.is_none() {
             let zs: Vec<_> = result
                 .iter()
                 .map(|o| (o.position.z, o.velocity.z))
                 .collect();
-            if compare(&zs, &initial_zs) {
-                phases[2] = Some(time)
+            if zs == initial_zs {
+                periods_xyz.2 = Some(time)
             }
         }
 
-        if phases.iter().all(|op| op.is_some()) {
-            let mut running_lcm = phases[0].unwrap();
-            for phase in phases {
-                running_lcm = lcm(phase.unwrap(), running_lcm);
-            }
-            return running_lcm;
+        if let (Some(x), Some(y), Some(z)) = periods_xyz {
+            return lcm(lcm(x, y), z);
         }
 
         time += 1;
     }
-}
-
-fn compare(a: &Vec<(i32, i32)>, b: &Vec<(i32, i32)>) -> bool {
-    if a.len() != b.len() {
-        return false;
-    }
-    for (a, b) in a.iter().zip(b) {
-        if a != b {
-            return false;
-        }
-    }
-    return true;
 }
 
 pub fn get_moons_simulation() -> i32 {
