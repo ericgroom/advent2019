@@ -1,5 +1,5 @@
 use crate::utils::geometry::render_image;
-use crate::utils::geometry::{CardinalDirection, Point};
+use crate::utils::geometry::{CardinalDirection, Vec2D};
 use crate::utils::read::read_list;
 use intcode_computer::{Computer, IntCodeComputer, IntcodeMemoryCellType, IntcodeMemoryType};
 use std::cell::RefCell;
@@ -31,15 +31,15 @@ impl From<IntcodeMemoryCellType> for Color {
 }
 
 struct ShipHull {
-    pub position_color_map: HashMap<Point, Color>,
+    pub position_color_map: HashMap<Vec2D, Color>,
 }
 
 impl ShipHull {
-    fn paint(&mut self, point: Point, color: Color) {
+    fn paint(&mut self, point: Vec2D, color: Color) {
         self.position_color_map.insert(point, color);
     }
 
-    fn get_color(&mut self, point: &Point) -> &Color {
+    fn get_color(&mut self, point: &Vec2D) -> &Color {
         let current_value = { self.position_color_map.get(point) };
         match current_value {
             Some(color) => color,
@@ -61,22 +61,22 @@ enum RotationDirection {
 
 struct EmergencyPaintingRobot {
     facing: CardinalDirection,
-    location: Point,
+    location: Vec2D,
 }
 
 impl EmergencyPaintingRobot {
     fn new() -> EmergencyPaintingRobot {
         EmergencyPaintingRobot {
             facing: CardinalDirection::North,
-            location: Point::new(0, 0),
+            location: Vec2D::new(0, 0),
         }
     }
-    fn advance(&mut self) -> &Point {
+    fn advance(&mut self) -> &Vec2D {
         let new_location = match self.facing {
-            CardinalDirection::North => Point::new(self.location.x, self.location.y - 1),
-            CardinalDirection::East => Point::new(self.location.x + 1, self.location.y),
-            CardinalDirection::South => Point::new(self.location.x, self.location.y + 1),
-            CardinalDirection::West => Point::new(self.location.x - 1, self.location.y),
+            CardinalDirection::North => Vec2D::new(self.location.x, self.location.y - 1),
+            CardinalDirection::East => Vec2D::new(self.location.x + 1, self.location.y),
+            CardinalDirection::South => Vec2D::new(self.location.x, self.location.y + 1),
+            CardinalDirection::West => Vec2D::new(self.location.x - 1, self.location.y),
         };
         self.location = new_location;
         &self.location
@@ -150,7 +150,7 @@ pub fn get_registration_identifier() -> String {
     let mut hull = ShipHull::new();
     let mut software = get_test_input();
     software.resize(2000, 0);
-    hull.paint(Point::new(0, 0), Color::White);
+    hull.paint(Vec2D::new(0, 0), Color::White);
     let painted_hull = take_the_robot_for_a_walk(software, hull);
 
     let (mut min_x, mut min_y, mut max_x, mut max_y) = (0, 0, 0, 0);
@@ -172,10 +172,6 @@ pub fn get_registration_identifier() -> String {
     let x_shift = if min_x < 0 { -min_x } else { 0 };
     let width = max_x - min_x;
     let mut result: Vec<i32> = Vec::new();
-    println!(
-        "resizing to {}",
-        ((max_x + x_shift) * (max_y + y_shift)) as usize
-    );
     result.resize(((max_x + x_shift + 1) * (max_y + y_shift + 1)) as usize, 0);
     for (point, color) in painted_hull.position_color_map {
         let index = (width * (point.y + y_shift) + (point.x + x_shift)) as usize;
