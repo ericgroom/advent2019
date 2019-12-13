@@ -4,7 +4,7 @@ pub trait PhysicsObject {
     fn tick(&mut self);
 }
 
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, Hash, PartialEq, Eq)]
 pub struct PhysicsObject3D {
     pub position: Vec3D,
     pub velocity: Vec3D,
