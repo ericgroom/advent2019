@@ -64,7 +64,16 @@ pub fn display_password() -> String {
     let input = get_test_input();
     let layers = split_into_layers(input, width * height);
     let image = resolve_image_layers(layers);
-    render_image(image, width)
+    render_image(image, width, Box::new(render_pixel))
+}
+
+fn render_pixel(value: &i32) -> char {
+    match value {
+        0 => '█',
+        1 => ' ',
+        2 => 't',
+        _ => panic!("pixel other than 0, 1, 2"),
+    }
 }
 
 #[cfg(test)]
@@ -113,7 +122,10 @@ mod tests {
     #[test]
     fn test_render_image() {
         let image = vec![0, 1, 2, 2, 1, 0];
-        assert_eq!(render_image(image, 3), String::from("█ t\nt █\n"));
+        assert_eq!(
+            render_image(image, 3, Box::new(render_pixel)),
+            String::from("█ t\nt █\n")
+        );
     }
 
     #[test]

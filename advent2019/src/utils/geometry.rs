@@ -57,16 +57,15 @@ pub enum CardinalDirection {
     West,
 }
 
-pub fn render_image(image: Vec<i32>, row_width: usize) -> String {
+pub fn render_image(
+    image: Vec<i32>,
+    row_width: usize,
+    pixel_renderer: Box<dyn Fn(&i32) -> char>,
+) -> String {
     let mut result = String::new();
     for row in image.chunks(row_width) {
         for pixel in row {
-            let c = match pixel {
-                0 => '█',
-                1 => ' ',
-                2 => 't',
-                _ => panic!("pixel other than 0, 1, 2"),
-            };
+            let c = pixel_renderer(pixel);
             result.push(c)
         }
         result.push('\n')

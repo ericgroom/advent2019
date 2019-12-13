@@ -180,7 +180,15 @@ pub fn get_registration_identifier() -> String {
             Color::White => 1,
         }
     }
-    render_image(result, width as usize)
+    render_image(result, width as usize, Box::new(render_pixel))
+}
+
+fn render_pixel(value: &i32) -> char {
+    match value {
+        0 => '█',
+        1 => ' ',
+        _ => panic!("pixel other than 0, 1, 2"),
+    }
 }
 
 #[cfg(test)]
