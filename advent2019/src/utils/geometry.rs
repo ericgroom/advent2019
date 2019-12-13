@@ -73,3 +73,29 @@ pub fn render_image(image: Vec<i32>, row_width: usize) -> String {
     }
     result
 }
+
+pub fn gcd(x: i64, y: i64) -> i64 {
+    let mut x = x.abs();
+    let mut y = y.abs();
+    if x == 0 || y == 0 {
+        return 0;
+    }
+    while x != y {
+        if x > y {
+            x = x - y;
+        } else {
+            y = y - x;
+        }
+    }
+
+    x
+}
+
+pub fn lcm(x: i64, y: i64) -> i64 {
+    let gcd = gcd(x, y);
+    if gcd <= 0 {
+        0
+    } else {
+        x / gcd * y
+    }
+}

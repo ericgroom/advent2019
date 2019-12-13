@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 
-use crate::utils::geometry::Vec2D;
+use crate::utils::geometry::{gcd, Vec2D};
 
 impl Vec2D {
     fn slope(&self, other: Vec2D) -> (i32, i32) {
@@ -40,23 +40,6 @@ impl Ord for Sign {
             _ => Ordering::Equal,
         }
     }
-}
-
-fn gcd(x: i32, y: i32) -> i32 {
-    let mut x = x.abs();
-    let mut y = y.abs();
-    if x == 0 || y == 0 {
-        return 0;
-    }
-    while x != y {
-        if x > y {
-            x = x - y;
-        } else {
-            y = y - x;
-        }
-    }
-
-    x
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, PartialOrd, Copy, Clone)]
@@ -118,7 +101,7 @@ fn find_visible_asteroids(asteroid: &Vec2D, set: &HashSet<Vec2D>) -> HashMap<Slo
                 SlopeInfo::new(0, 1, direction)
             } else {
                 let multiplier = if (dy < 0) && (dx < 0) { -1 } else { 1 };
-                let gcd = gcd(dy, dx);
+                let gcd = gcd(dy as i64, dx as i64) as i32;
 
                 SlopeInfo::new(dy / gcd * multiplier, dx / gcd * multiplier, direction)
             }

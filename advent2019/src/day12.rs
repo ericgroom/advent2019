@@ -1,4 +1,4 @@
-use crate::utils::geometry::Vec3D;
+use crate::utils::geometry::{lcm, Vec3D};
 use crate::utils::physics::{PhysicsObject, PhysicsObject3D};
 use std::collections::HashMap;
 
@@ -73,14 +73,25 @@ fn get_test_input() -> Vec<PhysicsObject3D> {
 
 pub fn find_repetition(objects: Vec<PhysicsObject3D>) -> i64 {
     let mut result = objects.clone();
-    let mut previous_first = HashMap::new();
-    let mut previous_2 = HashMap::new();
-    let mut previous_3 = HashMap::new();
-    let mut previous_4 = HashMap::new();
 
-    let mut has_matched = vec![None, None, None, None];
+    let initial_xs: Vec<_> = objects
+        .iter()
+        .map(|o| (o.position.x, o.velocity.x))
+        .collect();
 
-    let mut time = 0;
+    let initial_ys: Vec<_> = objects
+        .iter()
+        .map(|o| (o.position.y, o.velocity.y))
+        .collect();
+
+    let initial_zs: Vec<_> = objects
+        .iter()
+        .map(|o| (o.position.z, o.velocity.z))
+        .collect();
+
+    let mut phases = vec![None, None, None];
+
+    let mut time = 1;
     loop {
         // update 'gravity'
         update_gravity(&mut result);
@@ -88,89 +99,60 @@ pub fn find_repetition(objects: Vec<PhysicsObject3D>) -> i64 {
         for object in result.iter_mut() {
             object.tick();
         }
-        if let None = has_matched[0] {
-            match previous_first.get(&result[0]) {
-                Some(t) => {
-                    has_matched[0] = Some(time - t);
-                    if has_matched.iter().all(|op| op.is_some()) {
-                        println!("has_matched: {:?}", has_matched);
-                        return time;
-                    }
-                }
-                None => {
-                    previous_first.insert(result[0].clone(), time);
-                }
+
+        if time < 5 {
+            time += 1;
+            continue;
+        }
+
+        if phases[0].is_none() {
+            let xs: Vec<_> = result
+                .iter()
+                .map(|o| (o.position.x, o.velocity.x))
+                .collect();
+            if compare(&xs, &initial_xs) {
+                phases[0] = Some(time)
             }
         }
-        if let None = has_matched[1] {
-            match previous_2.get(&result[1]) {
-                Some(t) => {
-                    has_matched[1] = Some(time - t);
-                    if has_matched.iter().all(|op| op.is_some()) {
-                        println!("has_matched: {:?}", has_matched);
-                        return time;
-                    }
-                }
-                None => {
-                    previous_2.insert(result[1].clone(), time);
-                }
+
+        if phases[1].is_none() {
+            let ys: Vec<_> = result
+                .iter()
+                .map(|o| (o.position.y, o.velocity.y))
+                .collect();
+            if compare(&ys, &initial_ys) {
+                phases[1] = Some(time)
             }
         }
-        if let None = has_matched[2] {
-            match previous_3.get(&result[2]) {
-                Some(t) => {
-                    has_matched[2] = Some(time - t);
-                    if has_matched.iter().all(|op| op.is_some()) {
-                        println!("has_matched: {:?}", has_matched);
-                        return time;
-                    }
-                }
-                None => {
-                    previous_3.insert(result[2].clone(), time);
-                }
+
+        if phases[2].is_none() {
+            let zs: Vec<_> = result
+                .iter()
+                .map(|o| (o.position.z, o.velocity.z))
+                .collect();
+            if compare(&zs, &initial_zs) {
+                phases[2] = Some(time)
             }
         }
-        if let None = has_matched[3] {
-            match previous_4.get(&result[3]) {
-                Some(t) => {
-                    has_matched[3] = Some(time - t);
-                    if has_matched.iter().all(|op| op.is_some()) {
-                        println!("has_matched: {:?}", has_matched);
-                        return time;
-                    }
-                }
-                None => {
-                    previous_4.insert(result[3].clone(), time);
-                }
+
+        if phases.iter().all(|op| op.is_some()) {
+            let mut running_lcm = phases[0].unwrap();
+            for phase in phases {
+                running_lcm = lcm(phase.unwrap(), running_lcm);
             }
+            return running_lcm;
         }
-        if time % 1_000_000 == 0 {
-            println!("mil");
-        }
-        // match previous.get(&result) {
-        //     Some(t) => {
-        //         println!("it's at time {}, {}", t, time);
-        //         // let differnces_1: Vec<usize> = matches.into_iter().map(|(x, y)| y - x).collect();
-        //         // println!("matches {:?}", differnces_1[0]);
-        //         // let differnces_2: Vec<usize> = matches2.into_iter().map(|(x, y)| y - x).collect();
-        //         // println!("matches {:?}", differnces_2[0]);
-        //         // let differnces_3: Vec<usize> = matches3.into_iter().map(|(x, y)| y - x).collect();
-        //         // println!("matches {:?}", differnces_3[0]);
-        //         // let differnces_4: Vec<usize> = matches4.into_iter().map(|(x, y)| y - x).collect();
-        //         // println!("matches {:?}", differnces_4[0]);
-        //         return time as i64;
-        //     }
-        //     None => {
-        //         previous.insert(result.clone(), time);
-        //     }
-        // }
+
         time += 1;
     }
 }
 
-fn all(bools: &Vec<bool>) -> bool {
-    for b in bools {
-        if !b {
+fn compare(a: &Vec<(i32, i32)>, b: &Vec<(i32, i32)>) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+    for (a, b) in a.iter().zip(b) {
+        if a != b {
             return false;
         }
     }
@@ -221,5 +203,10 @@ mod tests {
         ];
         let result = find_repetition(input);
         assert_eq!(result, 2772);
+    }
+
+    #[test]
+    fn test_correct_answer_part_2() {
+        assert_eq!(does_it_repeat(), 318382803780324);
     }
 }
