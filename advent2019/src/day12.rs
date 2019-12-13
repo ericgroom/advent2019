@@ -78,7 +78,7 @@ pub fn find_repetition(objects: Vec<PhysicsObject3D>) -> i64 {
     let mut previous_3 = HashMap::new();
     let mut previous_4 = HashMap::new();
 
-    let mut has_matched = vec![false, false, false, false];
+    let mut has_matched = vec![None, None, None, None];
 
     let mut time = 0;
     loop {
@@ -88,49 +88,64 @@ pub fn find_repetition(objects: Vec<PhysicsObject3D>) -> i64 {
         for object in result.iter_mut() {
             object.tick();
         }
-        match previous_first.get(&result[0]) {
-            Some(t) => {
-                has_matched[0] = true;
-                if all(&has_matched) {
-                    return time;
+        if let None = has_matched[0] {
+            match previous_first.get(&result[0]) {
+                Some(t) => {
+                    has_matched[0] = Some(time - t);
+                    if has_matched.iter().all(|op| op.is_some()) {
+                        println!("has_matched: {:?}", has_matched);
+                        return time;
+                    }
                 }
-            }
-            None => {
-                previous_first.insert(result[0].clone(), time);
+                None => {
+                    previous_first.insert(result[0].clone(), time);
+                }
             }
         }
-        match previous_2.get(&result[1]) {
-            Some(t) => {
-                has_matched[1] = true;
-                if all(&has_matched) {
-                    return time;
+        if let None = has_matched[1] {
+            match previous_2.get(&result[1]) {
+                Some(t) => {
+                    has_matched[1] = Some(time - t);
+                    if has_matched.iter().all(|op| op.is_some()) {
+                        println!("has_matched: {:?}", has_matched);
+                        return time;
+                    }
                 }
-            }
-            None => {
-                previous_2.insert(result[1].clone(), time);
+                None => {
+                    previous_2.insert(result[1].clone(), time);
+                }
             }
         }
-        match previous_3.get(&result[2]) {
-            Some(t) => {
-                has_matched[2] = true;
-                if all(&has_matched) {
-                    return time;
+        if let None = has_matched[2] {
+            match previous_3.get(&result[2]) {
+                Some(t) => {
+                    has_matched[2] = Some(time - t);
+                    if has_matched.iter().all(|op| op.is_some()) {
+                        println!("has_matched: {:?}", has_matched);
+                        return time;
+                    }
                 }
-            }
-            None => {
-                previous_3.insert(result[2].clone(), time);
+                None => {
+                    previous_3.insert(result[2].clone(), time);
+                }
             }
         }
-        match previous_4.get(&result[3]) {
-            Some(t) => {
-                has_matched[3] = true;
-                if all(&has_matched) {
-                    return time;
+        if let None = has_matched[3] {
+            match previous_4.get(&result[3]) {
+                Some(t) => {
+                    has_matched[3] = Some(time - t);
+                    if has_matched.iter().all(|op| op.is_some()) {
+                        println!("has_matched: {:?}", has_matched);
+                        return time;
+                    }
+                }
+                None => {
+                    previous_4.insert(result[3].clone(), time);
                 }
             }
-            None => {
-                previous_4.insert(result[3].clone(), time);
-            }
+        }
+        if time % 1_000_000 == 0 {
+            println!("mil");
         }
         // match previous.get(&result) {
         //     Some(t) => {
