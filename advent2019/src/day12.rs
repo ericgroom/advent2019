@@ -1,10 +1,9 @@
 use crate::utils::geometry::{lcm, Vec3D};
 use crate::utils::physics::{PhysicsObject, PhysicsObject3D};
-use std::collections::HashMap;
 
 fn run_simulation(duration: usize, objects: Vec<PhysicsObject3D>) -> Vec<PhysicsObject3D> {
     let mut result = objects.clone();
-    for time in 0..duration {
+    for _time in 0..duration {
         // update 'gravity'
         update_gravity(&mut result);
         // tick
