@@ -2,6 +2,7 @@ mod day1;
 mod day10;
 mod day11;
 mod day12;
+mod day13;
 mod day2;
 mod day3;
 mod day4;
@@ -70,4 +71,5 @@ fn main() {
     println!("{}", day11::get_registration_identifier());
     println!("Total energy: {}", day12::get_moons_simulation());
     println!("Repetition at: {}", day12::does_it_repeat());
+    println!("Number of blocks rendered: {}", day13::count_blocks());
 }
