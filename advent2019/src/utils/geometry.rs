@@ -100,8 +100,8 @@ pub fn lcm(x: i64, y: i64) -> i64 {
     }
 }
 
-pub fn convert_map_to_grid<T>(
-    map: HashMap<Vec2D, T>,
+pub fn convert_map_to_grid<T: Copy>(
+    map: &HashMap<Vec2D, T>,
     empty_value: i32,
     transform: Box<dyn Fn(T) -> i32>,
 ) -> (usize, Vec<i32>) {
@@ -130,7 +130,7 @@ pub fn convert_map_to_grid<T>(
     );
     for (point, value) in map {
         let index = (width * (point.y + y_shift) + (point.x + x_shift)) as usize;
-        result[index] = transform(value);
+        result[index] = transform(*value);
     }
     (width as usize, result)
 }

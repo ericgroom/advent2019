@@ -72,5 +72,5 @@ fn main() {
     println!("Total energy: {}", day12::get_moons_simulation());
     println!("Repetition at: {}", day12::does_it_repeat());
     println!("Number of blocks rendered: {}", day13::count_blocks());
-    day13::play_game();
+    println!("Score: {}", day13::play_game()); // 1048188 incorrect? 10165 too?
 }

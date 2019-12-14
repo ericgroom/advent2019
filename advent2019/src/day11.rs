@@ -154,7 +154,7 @@ pub fn get_registration_identifier() -> String {
     let painted_hull = take_the_robot_for_a_walk(software, hull);
     let convert_color = |color| Into::<i64>::into(color) as i32;
     let (width, grid) =
-        convert_map_to_grid(painted_hull.position_color_map, 0, Box::new(convert_color));
+        convert_map_to_grid(&painted_hull.position_color_map, 0, Box::new(convert_color));
     render_image(grid, width, Box::new(render_pixel))
 }
 
