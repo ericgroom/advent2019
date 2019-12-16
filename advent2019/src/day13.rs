@@ -1,6 +1,6 @@
 use crate::utils::geometry::{convert_map_to_grid, render_image, Vec2D};
 use crate::utils::read::read_list;
-use intcode_computer::{Computer, IntCodeComputer, IntcodeMemoryCellType, IntcodeMemoryType};
+use intcode_computer::{Computer, IntCodeComputer, IntcodeMemoryType};
 use std::cell::RefCell;
 use std::collections::HashMap;
 
@@ -84,6 +84,7 @@ fn output_to_map(output: &mut IntcodeMemoryType) -> (i64, HashMap<Vec2D, Entity>
     (score, grid)
 }
 
+const PRINT_FRAMES: bool = false;
 pub fn play_game() -> i64 {
     let mut game = get_test_input();
     game.resize(3000, 0);
@@ -111,9 +112,11 @@ pub fn play_game() -> i64 {
         } else {
             computer.provide_input(1);
         }
-        // let frame = render_image(grid, width, Box::new(render_pixel));
-        // print!("{}", frame);
-        // std::thread::sleep_ms(1000 / 60);
+        if PRINT_FRAMES {
+            let frame = render_image(grid, width, Box::new(render_pixel));
+            print!("{}", frame);
+            std::thread::sleep(std::time::Duration::from_millis(1000 / 60));
+        }
     }
     // TODO refactor once computer doesn't take closure for output
     let mut output = output_container.borrow_mut();
