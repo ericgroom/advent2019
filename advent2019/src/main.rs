@@ -3,6 +3,7 @@ mod day10;
 mod day11;
 mod day12;
 mod day13;
+mod day14;
 mod day2;
 mod day3;
 mod day4;
@@ -72,5 +73,6 @@ fn main() {
     println!("Total energy: {}", day12::get_moons_simulation());
     println!("Repetition at: {}", day12::does_it_repeat());
     println!("Number of blocks rendered: {}", day13::count_blocks());
-    println!("Score: {}", day13::play_game()); // 1048188 incorrect? 10165 too?
+    println!("Score: {}", day13::play_game());
+    println!("Number of ORE needed: {}", day14::find_ore_cost()); // 938867 too high, 832696 too low
 }

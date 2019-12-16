@@ -89,7 +89,7 @@ pub fn construct(
             materials.insert(element.clone(), already_constructed_quanitity - quantity);
         } else {
             println!(
-                "using {} of spares, leaving {}",
+                "using all {} of spares, leaving {}",
                 already_constructed_quanitity, 0
             );
             quantity -= already_constructed_quanitity;
@@ -111,14 +111,6 @@ pub fn construct(
         reactions_needed,
         reaction.output.quantity * reactions_needed
     );
-    let amount_extra = reaction.output.quantity * reactions_needed - quantity;
-    if amount_extra > 0 {
-        println!("{} leftover", amount_extra);
-        materials
-            .entry(element.clone())
-            .and_modify(|qty| *qty += amount_extra)
-            .or_insert(amount_extra);
-    }
     for input in reaction.inputs.iter() {
         if input.id == "ORE" {
             let ore_to_consume = input.quantity * reactions_needed;
@@ -134,6 +126,14 @@ pub fn construct(
 
             ores_consumed += ore_count;
         }
+    }
+    let amount_extra = reaction.output.quantity * reactions_needed - quantity;
+    if amount_extra > 0 {
+        println!("{} leftover", amount_extra);
+        materials
+            .entry(element.clone())
+            .and_modify(|qty| *qty += amount_extra)
+            .or_insert(amount_extra);
     }
     return ores_consumed;
 }
@@ -263,6 +263,14 @@ mod tests {
 1 A, 1 B => 1 FUEL";
             let reactions = read_input(input);
             assert_eq!(find_fuel_cost_in_ore(reactions), 1);
+        }
+        {
+            let input = "10 ORE => 5 A
+2 A => 3 B
+7 B => 1 C
+7 B, 1 C => 1 FUEL";
+            let reactions = read_input(input);
+            assert_eq!(find_fuel_cost_in_ore(reactions), 20);
         }
         {
             let input = "10 ORE => 10 A
