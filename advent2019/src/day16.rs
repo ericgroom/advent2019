@@ -1,6 +1,7 @@
 // list of ints as input
 // each phase, a new list is generated with the same length as the previous
 // result of phase = summation of elements * pattern, only one's digit is preserved
+use crate::utils::read::read_list;
 
 struct PatternIter {
     subsequnce_length: usize,
@@ -37,6 +38,25 @@ impl Iterator for PatternIter {
         }
         Some(num)
     }
+}
+
+fn perform_phase(nums: Vec<i32>) -> Vec<i32> {
+    let mut result = Vec::new();
+    for i in 0..nums.len() {
+        let pattern = PatternIter::new(i + 1);
+        let new_num = nums.iter()
+            .cloned()
+            .zip(pattern)
+            .map(|(a, b)| a * b)
+            .fold(0, |acc, x| acc + x);
+        println!("nums: {:?}", nums);
+        result.push(new_num.abs() % 10);
+    }
+    result
+}
+
+fn read_input(s: &str) -> Vec<i32> {
+    read_list(s, "")
 }
 
 #[cfg(test)]
@@ -92,5 +112,12 @@ mod tests {
             let result: Vec<_> = iter.skip(1).take(8).collect();
             assert_eq!(result, vec![0, 0, 0, 0, 0, 0, 0, 1]);
         }
+    }
+
+    #[test]
+    fn test_perform_phase() {
+        let list = read_input("12345678");
+        let result = perform_phase(list);
+        assert_eq!(result, read_input("48226158"));
     }
 }
