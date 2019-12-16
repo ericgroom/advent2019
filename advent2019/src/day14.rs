@@ -256,6 +256,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_find_fuel_cost_in_ore() {
         {
             let input = "1 ORE => 2 A

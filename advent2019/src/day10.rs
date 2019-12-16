@@ -1,7 +1,8 @@
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 
-use crate::utils::geometry::{gcd, Vec2D};
+use crate::utils::geometry::Vec2D;
+use crate::utils::math::gcd;
 
 impl Vec2D {
     fn slope(&self, other: Vec2D) -> (i32, i32) {

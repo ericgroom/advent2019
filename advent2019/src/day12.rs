@@ -1,4 +1,5 @@
-use crate::utils::geometry::{lcm, Vec3D};
+use crate::utils::geometry::Vec3D;
+use crate::utils::math::lcm;
 use crate::utils::physics::{PhysicsObject, PhysicsObject3D};
 
 fn run_simulation(duration: usize, objects: Vec<PhysicsObject3D>) -> Vec<PhysicsObject3D> {

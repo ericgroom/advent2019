@@ -1,3 +1,4 @@
+use crate::utils::math::digits_of;
 use std::collections::{HashMap, HashSet};
 use std::ops::Range;
 
@@ -9,18 +10,6 @@ pub fn find_valid_passwords(range: Range<i32>, use_restrictive_matching: bool) -
         }
     }
     result_set
-}
-
-fn digits(integer: i32) -> Vec<i32> {
-    let mut result = Vec::new();
-    let mut temp = integer;
-    while temp > 0 {
-        let last_digit = temp % 10;
-        result.push(last_digit);
-        temp /= 10;
-    }
-    result.reverse();
-    result
 }
 
 fn is_sorted(num_list: &Vec<i32>) -> bool {
@@ -68,7 +57,7 @@ fn has_identical_adjacent_elements_of_length_two(num_list: &Vec<i32>) -> bool {
 }
 
 pub fn is_valid_password(password: i32, use_restrictive_matching: bool) -> bool {
-    let digits = digits(password);
+    let digits = digits_of(password);
     if digits.len() != 6 {
         return false;
     }
@@ -99,21 +88,21 @@ mod tests {
     use super::*;
     #[test]
     fn test_digits() {
-        assert_eq!(digits(0), vec![]);
-        assert_eq!(digits(123456), vec![1, 2, 3, 4, 5, 6])
+        assert_eq!(digits_of(0), vec![]);
+        assert_eq!(digits_of(123456), vec![1, 2, 3, 4, 5, 6])
     }
 
     #[test]
     fn test_is_sorted() {
-        assert_eq!(is_sorted(&digits(112233)), true);
-        assert_eq!(is_sorted(&digits(112232)), false);
+        assert_eq!(is_sorted(&digits_of(112233)), true);
+        assert_eq!(is_sorted(&digits_of(112232)), false);
     }
 
     #[test]
     fn test_has_identical_adjacent_elements() {
-        assert_eq!(has_identical_adjacent_elements(&digits(111111)), true);
-        assert_eq!(has_identical_adjacent_elements(&digits(123456)), false);
-        assert_eq!(has_identical_adjacent_elements(&digits(123345)), true);
+        assert_eq!(has_identical_adjacent_elements(&digits_of(111111)), true);
+        assert_eq!(has_identical_adjacent_elements(&digits_of(123456)), false);
+        assert_eq!(has_identical_adjacent_elements(&digits_of(123345)), true);
     }
 
     #[test]
@@ -131,15 +120,15 @@ mod tests {
     #[test]
     fn test_has_identical_adjacent_elements_of_length_two() {
         assert_eq!(
-            has_identical_adjacent_elements_of_length_two(&digits(112233)),
+            has_identical_adjacent_elements_of_length_two(&digits_of(112233)),
             true
         );
         assert_eq!(
-            has_identical_adjacent_elements_of_length_two(&digits(123444)),
+            has_identical_adjacent_elements_of_length_two(&digits_of(123444)),
             false
         );
         assert_eq!(
-            has_identical_adjacent_elements_of_length_two(&digits(111122)),
+            has_identical_adjacent_elements_of_length_two(&digits_of(111122)),
             true
         );
     }
