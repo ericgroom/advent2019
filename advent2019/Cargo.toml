@@ -8,4 +8,5 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0.25"
+rayon = "1.1"
 intcode_computer = { path = "../intcode_computer" }
