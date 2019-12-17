@@ -76,4 +76,5 @@ fn main() {
     println!("Number of blocks rendered: {}", day13::count_blocks());
     println!("Score: {}", day13::play_game());
     println!("Number of ORE needed: {}", day14::find_ore_cost()); // 938867 too high, 832696 too low
+    println!("FFT result: {}", day16::perform_fft());
 }

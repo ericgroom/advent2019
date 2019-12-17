@@ -44,12 +44,12 @@ fn perform_phase(nums: Vec<i32>) -> Vec<i32> {
     let mut result = Vec::new();
     for i in 0..nums.len() {
         let pattern = PatternIter::new(i + 1);
-        let new_num = nums.iter()
+        let new_num = nums
+            .iter()
             .cloned()
-            .zip(pattern)
+            .zip(pattern.skip(1))
             .map(|(a, b)| a * b)
             .fold(0, |acc, x| acc + x);
-        println!("nums: {:?}", nums);
         result.push(new_num.abs() % 10);
     }
     result
@@ -57,6 +57,29 @@ fn perform_phase(nums: Vec<i32>) -> Vec<i32> {
 
 fn read_input(s: &str) -> Vec<i32> {
     read_list(s, "")
+}
+
+fn perform_n_phases(n: usize, nums: Vec<i32>) -> Vec<i32> {
+    let mut result = nums.clone();
+    for _ in 0..n {
+        result = perform_phase(result);
+    }
+    result
+}
+
+fn get_test_input() -> Vec<i32> {
+    read_input(include_str!("day16_input.txt"))
+}
+
+pub fn perform_fft() -> String {
+    let input = get_test_input();
+    let result = perform_n_phases(100, input);
+    result
+        .into_iter()
+        .take(8)
+        .map(|x| x.to_string())
+        .collect::<Vec<String>>()
+        .join("")
 }
 
 #[cfg(test)]
@@ -119,5 +142,41 @@ mod tests {
         let list = read_input("12345678");
         let result = perform_phase(list);
         assert_eq!(result, read_input("48226158"));
+    }
+
+    #[test]
+    fn test_perform_n_phases() {
+        let list = read_input("12345678");
+        let result = perform_n_phases(4, list);
+        assert_eq!(result, read_input("01029498"));
+    }
+    #[test]
+    fn test_large_known_cases() {
+        {
+            let result = perform_n_phases(100, read_input("80871224585914546619083218645595"))
+                .into_iter()
+                .take(8)
+                .collect::<Vec<_>>();
+            assert_eq!(result, read_input("24176176"));
+        }
+        {
+            let result = perform_n_phases(100, read_input("19617804207202209144916044189917"))
+                .into_iter()
+                .take(8)
+                .collect::<Vec<_>>();
+            assert_eq!(result, read_input("73745418"));
+        }
+        {
+            let result = perform_n_phases(100, read_input("69317163492948606335995924319873"))
+                .into_iter()
+                .take(8)
+                .collect::<Vec<_>>();
+            assert_eq!(result, read_input("52432133"));
+        }
+    }
+
+    #[test]
+    fn test_correct_answer_part_1() {
+        assert_eq!(perform_fft(), "45834272".to_string());
     }
 }
