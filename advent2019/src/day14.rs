@@ -135,6 +135,51 @@ pub fn find_fuel_cost_in_ore(reactions: Vec<Reaction>) -> usize {
     ores_consumed
 }
 
+fn max_quantity_of_fuel(ore_count: i64, reactions: HashMap<String, Reaction>) -> i64 {
+    let (cycle_length, cycle_cost, mut leftover) = {
+        let mut first_materials = HashMap::new();
+        construct(&"FUEL".to_string(), 1, &reactions, &mut first_materials);
+        let mut materials = HashMap::new();
+        let mut i = 0;
+        let mut ore_consumed = 0;
+        while materials != first_materials || i == 1 {
+            ore_consumed += construct(&"FUEL".to_string(), 1, &reactions, &mut materials);
+            i += 1;
+        }
+        (i, ore_consumed, materials)
+    };
+    let cycles_possible = ore_count / cycle_cost as i64;
+    let mut materials = HashMap::new();
+    let mut ore_remaining = ore_count;
+    let mut fuel_produced = 0;
+    for i in 0..cycles_possible {
+        let ore_consumed = construct(
+            &"FUEL".to_string(),
+            cycle_length,
+            &reactions,
+            &mut materials,
+        ) as i64;
+        ore_remaining -= ore_consumed;
+        fuel_produced += cycle_length as i64;
+        println!("{}/{}", i, cycles_possible);
+    }
+    println!(
+        "after cycles fuel: {}, ore: {}, mats: {:?}",
+        fuel_produced, ore_remaining, leftover
+    );
+    while ore_remaining > 0 {
+        let ore_cost = construct(&"FUEL".to_string(), 1, &reactions, &mut materials) as i64;
+        if ore_cost > ore_remaining {
+            break;
+        }
+        ore_remaining -= ore_cost;
+        fuel_produced += 1;
+    }
+    fuel_produced
+}
+
+fn find_fuel_producible_from_1_trillion_ore() {}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -331,5 +376,24 @@ mod tests {
     #[test]
     fn test_correct_answer_part_1() {
         assert_eq!(find_ore_cost(), 857266);
+    }
+
+    #[test]
+    fn test_max_quantity_of_fuel() {
+        {
+            let input = "157 ORE => 5 NZVS
+165 ORE => 6 DCFZ
+44 XJWVT, 5 KHKGT, 1 QDVJ, 29 NZVS, 9 GPVTF, 48 HKGWZ => 1 FUEL
+12 HKGWZ, 1 GPVTF, 8 PSHF => 9 QDVJ
+179 ORE => 7 PSHF
+177 ORE => 5 HKGWZ
+7 DCFZ, 7 PSHF => 2 XJWVT
+165 ORE => 2 GPVTF
+3 DCFZ, 7 NZVS, 5 HKGWZ, 10 PSHF => 8 KHKGT";
+            let map = construct_reaction_tree(read_input(input));
+            assert_eq!(max_quantity_of_fuel(1_000_000_000_000, map), 82892753);
+        }
+        // assert_eq!(max_quantity_of_fuel(180697, 1_000_000_000_000), 5586022);
+        // assert_eq!(max_quantity_of_fuel(2210736, 1_000_000_000_000), 460664);
     }
 }
