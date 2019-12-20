@@ -76,6 +76,7 @@ pub fn construct(
     let reaction = all_reactions[element].clone();
     let mut ores_consumed = 0;
     let mut quantity = quantity;
+    let amount_extra: usize;
     println!("Need {} of {}", quantity, element);
 
     if let Some(already_constructed_quanitity) = materials.remove(element) {
@@ -85,8 +86,9 @@ pub fn construct(
                 quantity,
                 already_constructed_quanitity - quantity
             );
+            amount_extra = already_constructed_quanitity - quantity;
             quantity = 0;
-            materials.insert(element.clone(), already_constructed_quanitity - quantity);
+            materials.insert(element.clone(), amount_extra);
         } else {
             println!(
                 "using all {} of spares, leaving {}",
@@ -256,7 +258,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_find_fuel_cost_in_ore() {
         {
             let input = "1 ORE => 2 A
@@ -347,5 +348,10 @@ mod tests {
             let reactions = read_input(input);
             assert_eq!(find_fuel_cost_in_ore(reactions), 2210736);
         }
+    }
+
+    #[test]
+    fn test_correct_answer_part_1() {
+        assert_eq!(find_ore_cost(), 857266);
     }
 }
