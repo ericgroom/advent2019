@@ -6,4 +6,3 @@ members = [
     "intcode_cli",
 ]
 default-members = ["advent2019"]
-default-run = "advent2019"
