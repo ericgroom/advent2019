@@ -136,49 +136,61 @@ pub fn find_fuel_cost_in_ore(reactions: Vec<Reaction>) -> usize {
 }
 
 fn max_quantity_of_fuel(ore_count: i64, reactions: HashMap<String, Reaction>) -> i64 {
-    let (cycle_length, cycle_cost, mut leftover) = {
-        let mut first_materials = HashMap::new();
-        construct(&"FUEL".to_string(), 1, &reactions, &mut first_materials);
-        let mut materials = HashMap::new();
-        let mut i = 0;
-        let mut ore_consumed = 0;
-        while materials != first_materials || i == 1 {
-            ore_consumed += construct(&"FUEL".to_string(), 1, &reactions, &mut materials);
-            i += 1;
-        }
-        (i, ore_consumed, materials)
-    };
-    let cycles_possible = ore_count / cycle_cost as i64;
-    let mut materials = HashMap::new();
-    let mut ore_remaining = ore_count;
-    let mut fuel_produced = 0;
-    for i in 0..cycles_possible {
-        let ore_consumed = construct(
+    let mut left = 1;
+    let mut right = ore_count;
+    let mut cache: HashMap<i64, (i64, HashMap<String, usize>)> = HashMap::new();
+    let mut has_surpassed_max = false;
+    let mut fuel_count = 0;
+    while right >= left {
+        // let mid = left + (right - left) / 2;
+        let mid = if has_surpassed_max {
+            left + (right - left) / 2
+        } else {
+            left << 1
+        };
+        println!("{} - {} - {}", left, mid, right);
+        let (start_fuel, (cost, leftover)) = {
+            let mut max_key = 0;
+            for key in cache.keys() {
+                if *key > max_key && *key <= mid {
+                    max_key = *key;
+                }
+            }
+            if let Some((ore_cost, materials)) = cache.get(&max_key) {
+                (max_key, (*ore_cost, materials.clone()))
+            } else {
+                (0, (0, HashMap::new()))
+            }
+        };
+        println!("starting calculation of {} from {}", mid, start_fuel);
+        let mut materials: HashMap<String, usize> = leftover.clone();
+        materials.insert("FUEL".to_string(), start_fuel as usize);
+        let ores_consumed = construct(
             &"FUEL".to_string(),
-            cycle_length,
+            mid as usize,
             &reactions,
             &mut materials,
-        ) as i64;
-        ore_remaining -= ore_consumed;
-        fuel_produced += cycle_length as i64;
-        println!("{}/{}", i, cycles_possible);
-    }
-    println!(
-        "after cycles fuel: {}, ore: {}, mats: {:?}",
-        fuel_produced, ore_remaining, leftover
-    );
-    while ore_remaining > 0 {
-        let ore_cost = construct(&"FUEL".to_string(), 1, &reactions, &mut materials) as i64;
-        if ore_cost > ore_remaining {
-            break;
+        ) as i64
+            + cost;
+        cache.insert(mid, (ores_consumed, materials));
+        println!("mid: {}, cost: {}", mid, ores_consumed);
+        if ores_consumed > ore_count {
+            right = mid - 1;
+            has_surpassed_max = true;
+            println!("surpassed");
+        } else {
+            left = mid + 1;
+            fuel_count = mid;
         }
-        ore_remaining -= ore_cost;
-        fuel_produced += 1;
     }
-    fuel_produced
+    fuel_count
 }
 
-fn find_fuel_producible_from_1_trillion_ore() {}
+pub fn find_fuel_producible_from_1_trillion_ore() -> i64 {
+    let input = get_test_input();
+    let map = construct_reaction_tree(input);
+    max_quantity_of_fuel(1_000_000_000_000, map)
+}
 
 #[cfg(test)]
 mod tests {
@@ -393,7 +405,47 @@ mod tests {
             let map = construct_reaction_tree(read_input(input));
             assert_eq!(max_quantity_of_fuel(1_000_000_000_000, map), 82892753);
         }
-        // assert_eq!(max_quantity_of_fuel(180697, 1_000_000_000_000), 5586022);
-        // assert_eq!(max_quantity_of_fuel(2210736, 1_000_000_000_000), 460664);
+        {
+            let input = "2 VPVL, 7 FWMGM, 2 CXFTF, 11 MNCFX => 1 STKFG
+17 NVRVD, 3 JNWZP => 8 VPVL
+53 STKFG, 6 MNCFX, 46 VJHF, 81 HVMC, 68 CXFTF, 25 GNMV => 1 FUEL
+22 VJHF, 37 MNCFX => 5 FWMGM
+139 ORE => 4 NVRVD
+144 ORE => 7 JNWZP
+5 MNCFX, 7 RFSQX, 2 FWMGM, 2 VPVL, 19 CXFTF => 3 HVMC
+5 VJHF, 7 MNCFX, 9 VPVL, 37 CXFTF => 6 GNMV
+145 ORE => 6 MNCFX
+1 NVRVD => 8 CXFTF
+1 VJHF, 6 MNCFX => 4 RFSQX
+176 ORE => 6 VJHF";
+            let map = construct_reaction_tree(read_input(input));
+            assert_eq!(max_quantity_of_fuel(1_000_000_000_000, map), 5586022);
+        }
+        {
+            let input = "171 ORE => 8 CNZTR
+7 ZLQW, 3 BMBT, 9 XCVML, 26 XMNCP, 1 WPTQ, 2 MZWV, 1 RJRHP => 4 PLWSL
+114 ORE => 4 BHXH
+14 VRPVC => 6 BMBT
+6 BHXH, 18 KTJDG, 12 WPTQ, 7 PLWSL, 31 FHTLT, 37 ZDVW => 1 FUEL
+6 WPTQ, 2 BMBT, 8 ZLQW, 18 KTJDG, 1 XMNCP, 6 MZWV, 1 RJRHP => 6 FHTLT
+15 XDBXC, 2 LTCX, 1 VRPVC => 6 ZLQW
+13 WPTQ, 10 LTCX, 3 RJRHP, 14 XMNCP, 2 MZWV, 1 ZLQW => 1 ZDVW
+5 BMBT => 4 WPTQ
+189 ORE => 9 KTJDG
+1 MZWV, 17 XDBXC, 3 XCVML => 2 XMNCP
+12 VRPVC, 27 CNZTR => 2 XDBXC
+15 KTJDG, 12 BHXH => 5 XCVML
+3 BHXH, 2 VRPVC => 7 MZWV
+121 ORE => 7 VRPVC
+7 XCVML => 6 RJRHP
+5 BHXH, 4 VRPVC => 5 LTCX";
+            let map = construct_reaction_tree(read_input(input));
+            assert_eq!(max_quantity_of_fuel(1_000_000_000_000, map), 460664);
+        }
+    }
+
+    #[test]
+    fn test_correct_answer_part_2() {
+        assert_eq!(find_fuel_producible_from_1_trillion_ore(), 2144702);
     }
 }

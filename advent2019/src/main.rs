@@ -75,5 +75,9 @@ fn main() {
     println!("Repetition at: {}", day12::does_it_repeat());
     println!("Number of blocks rendered: {}", day13::count_blocks());
     println!("Score: {}", day13::play_game());
-    println!("Number of ORE needed: {}", day14::find_ore_cost()); // 938867 too high, 832696 too low
+    println!("Number of ORE needed: {}", day14::find_ore_cost());
+    println!(
+        "Fuel producible from 1 trillion ore: {}",
+        day14::find_fuel_producible_from_1_trillion_ore()
+    );
 }
