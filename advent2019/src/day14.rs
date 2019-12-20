@@ -76,31 +76,19 @@ pub fn construct(
     let reaction = all_reactions[element].clone();
     let mut ores_consumed = 0;
     let mut quantity = quantity;
-    let amount_extra: usize;
-    println!("Need {} of {}", quantity, element);
 
     if let Some(already_constructed_quanitity) = materials.remove(element) {
         if quantity <= already_constructed_quanitity {
-            println!(
-                "using {} of spares, leaving {}",
-                quantity,
-                already_constructed_quanitity - quantity
-            );
-            amount_extra = already_constructed_quanitity - quantity;
+            let amount_extra = already_constructed_quanitity - quantity;
             quantity = 0;
             materials.insert(element.clone(), amount_extra);
         } else {
-            println!(
-                "using all {} of spares, leaving {}",
-                already_constructed_quanitity, 0
-            );
             quantity -= already_constructed_quanitity;
         }
     }
     if quantity <= 0 {
         return 0;
     }
-    println!("still need {} of {}", quantity, element);
     let reactions_needed = {
         let mut reaction_count = 0;
         while reaction_count * reaction.output.quantity < quantity {
@@ -108,15 +96,9 @@ pub fn construct(
         }
         reaction_count
     };
-    println!(
-        "{} reactions will produce {}",
-        reactions_needed,
-        reaction.output.quantity * reactions_needed
-    );
     for input in reaction.inputs.iter() {
         if input.id == "ORE" {
             let ore_to_consume = input.quantity * reactions_needed;
-            println!("using {} ore", ore_to_consume);
             ores_consumed += ore_to_consume;
         } else {
             let ore_count = construct(
@@ -131,7 +113,6 @@ pub fn construct(
     }
     let amount_extra = reaction.output.quantity * reactions_needed - quantity;
     if amount_extra > 0 {
-        println!("{} leftover", amount_extra);
         materials
             .entry(element.clone())
             .and_modify(|qty| *qty += amount_extra)
@@ -284,7 +265,6 @@ mod tests {
             let reactions = read_input(input);
             assert_eq!(find_fuel_cost_in_ore(reactions), 31);
         }
-        println!("-----------------------");
         {
             let input = "9 ORE => 2 A
 8 ORE => 3 B
@@ -296,8 +276,6 @@ mod tests {
             let reactions = read_input(input);
             assert_eq!(find_fuel_cost_in_ore(reactions), 165);
         }
-        println!("-----------------------");
-
         {
             let input = "157 ORE => 5 NZVS
 165 ORE => 6 DCFZ
