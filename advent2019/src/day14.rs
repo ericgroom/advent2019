@@ -1,5 +1,5 @@
 use crate::utils::read::read_list;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::str::FromStr;
 
 type Quantity = usize;
@@ -67,56 +67,49 @@ fn construct_reaction_tree(reactions: Vec<Reaction>) -> HashMap<String, Reaction
     result
 }
 
-pub fn construct(
-    element: &String,
+pub fn construct<'a, 'b>(
+    element: &'a str,
     quantity: Quantity,
-    all_reactions: &HashMap<String, Reaction>,
-    materials: &mut HashMap<String, Quantity>,
+    all_reactions: &'a HashMap<String, Reaction>,
+    materials: &'b mut HashMap<&'a str, Quantity>,
 ) -> usize {
-    let reaction = all_reactions[element].clone();
+    let mut stack = VecDeque::new();
+    stack.push_front((element, quantity));
     let mut ores_consumed = 0;
-    let mut quantity = quantity;
+    while !stack.is_empty() {
+        let (element, mut quantity) = stack.pop_front().unwrap();
+        let reaction = &all_reactions[element];
 
-    if let Some(already_constructed_quanitity) = materials.remove(element) {
-        if quantity <= already_constructed_quanitity {
-            let amount_extra = already_constructed_quanitity - quantity;
+        let already_constructed_quanitity = materials.entry(element).or_default();
+        let mut amount_extra = 0;
+        if quantity <= *already_constructed_quanitity {
+            amount_extra = *already_constructed_quanitity - quantity;
             quantity = 0;
-            materials.insert(element.clone(), amount_extra);
+            *already_constructed_quanitity = amount_extra;
         } else {
-            quantity -= already_constructed_quanitity;
+            quantity -= *already_constructed_quanitity;
+            *already_constructed_quanitity = 0;
         }
-    }
-    if quantity <= 0 {
-        return 0;
-    }
-    let reactions_needed = {
-        let mut reaction_count = 0;
-        while reaction_count * reaction.output.quantity < quantity {
-            reaction_count += 1;
+        if quantity <= 0 {
+            continue;
         }
-        reaction_count
-    };
-    for input in reaction.inputs.iter() {
-        if input.id == "ORE" {
-            let ore_to_consume = input.quantity * reactions_needed;
-            ores_consumed += ore_to_consume;
-        } else {
-            let ore_count = construct(
-                &input.id,
-                input.quantity * reactions_needed,
-                &all_reactions,
-                materials,
-            );
-
-            ores_consumed += ore_count;
+        let reactions_needed = {
+            let mut reaction_count = 0;
+            while reaction_count * reaction.output.quantity < quantity {
+                reaction_count += 1;
+            }
+            reaction_count
+        };
+        for input in reaction.inputs.iter() {
+            if input.id == "ORE" {
+                let ore_to_consume = input.quantity * reactions_needed;
+                ores_consumed += ore_to_consume;
+            } else {
+                stack.push_front((&input.id, input.quantity * reactions_needed));
+            }
         }
-    }
-    let amount_extra = reaction.output.quantity * reactions_needed - quantity;
-    if amount_extra > 0 {
-        materials
-            .entry(element.clone())
-            .and_modify(|qty| *qty += amount_extra)
-            .or_insert(amount_extra);
+        amount_extra += reaction.output.quantity * reactions_needed - quantity;
+        materials.insert(element, amount_extra);
     }
     return ores_consumed;
 }
@@ -131,24 +124,18 @@ pub fn find_ore_cost() -> usize {
 
 pub fn find_fuel_cost_in_ore(reactions: Vec<Reaction>) -> usize {
     let map = construct_reaction_tree(reactions);
-    let ores_consumed = construct(&"FUEL".to_string(), 1, &map, &mut HashMap::new());
+    let ores_consumed = construct("FUEL", 1, &map, &mut HashMap::new());
     ores_consumed
 }
 
 fn max_quantity_of_fuel(ore_count: i64, reactions: HashMap<String, Reaction>) -> i64 {
-    let mut left = 1;
-    let mut right = ore_count;
-    let mut cache: HashMap<i64, (i64, HashMap<String, usize>)> = HashMap::new();
-    let mut has_surpassed_max = false;
+    let cost_of_one = construct("FUEL", 1, &reactions, &mut HashMap::new());
+    let mut left = cost_of_one as i64;
+    let mut right = ore_count / cost_of_one as i64 * 2;
     let mut fuel_count = 0;
+    let mut cache: HashMap<i64, (i64, HashMap<&str, usize>)> = HashMap::new();
     while right >= left {
-        // let mid = left + (right - left) / 2;
-        let mid = if has_surpassed_max {
-            left + (right - left) / 2
-        } else {
-            left << 1
-        };
-        println!("{} - {} - {}", left, mid, right);
+        let mid = left + (right - left) / 2;
         let (start_fuel, (cost, leftover)) = {
             let mut max_key = 0;
             for key in cache.keys() {
@@ -157,27 +144,18 @@ fn max_quantity_of_fuel(ore_count: i64, reactions: HashMap<String, Reaction>) ->
                 }
             }
             if let Some((ore_cost, materials)) = cache.get(&max_key) {
-                (max_key, (*ore_cost, materials.clone()))
+                (max_key, (*ore_cost, materials.to_owned()))
             } else {
                 (0, (0, HashMap::new()))
             }
         };
-        println!("starting calculation of {} from {}", mid, start_fuel);
-        let mut materials: HashMap<String, usize> = leftover.clone();
-        materials.insert("FUEL".to_string(), start_fuel as usize);
-        let ores_consumed = construct(
-            &"FUEL".to_string(),
-            mid as usize,
-            &reactions,
-            &mut materials,
-        ) as i64
-            + cost;
+        let mut materials: HashMap<&str, usize> = leftover;
+        materials.insert("FUEL", start_fuel as usize);
+        let ores_consumed =
+            construct("FUEL", mid as usize, &reactions, &mut materials) as i64 + cost;
         cache.insert(mid, (ores_consumed, materials));
-        println!("mid: {}, cost: {}", mid, ores_consumed);
         if ores_consumed > ore_count {
             right = mid - 1;
-            has_surpassed_max = true;
-            println!("surpassed");
         } else {
             left = mid + 1;
             fuel_count = mid;
