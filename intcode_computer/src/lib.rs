@@ -244,12 +244,3 @@ pub enum Interrupt {
     Output,
     Halt,
 }
-
-impl Interrupt {
-    pub fn is_halted(&self) -> bool {
-        match self {
-            Self::Halt => true,
-            _ => false,
-        }
-    }
-}
