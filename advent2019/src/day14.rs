@@ -130,7 +130,7 @@ pub fn find_fuel_cost_in_ore(reactions: Vec<Reaction>) -> usize {
 
 fn max_quantity_of_fuel(ore_count: i64, reactions: HashMap<String, Reaction>) -> i64 {
     let cost_of_one = construct("FUEL", 1, &reactions, &mut HashMap::new());
-    let mut left = cost_of_one as i64;
+    let mut left = 1;
     let mut right = ore_count / cost_of_one as i64 * 2;
     let mut fuel_count = 0;
     let mut cache: HashMap<i64, (i64, HashMap<&str, usize>)> = HashMap::new();
