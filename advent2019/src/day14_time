@@ -1,0 +1,8 @@
+base: 13m16.313s
+iterative: 15m17.559s
+normal bin search: >25m
+reducing clones in construct: 3m48.098s !??!?!?!?!?
+guessing upper and lower bound: 1m26.166s
+
+6ada30bc70934dc0ee81d41cd293ae58cabd2545
+7f23fe74ffea83b4379a32200e65c59894f5aa9c
