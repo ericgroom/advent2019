@@ -74,29 +74,40 @@ impl<'a> Computer<IntcodeMemoryCellType> for IntCodeComputer {
     }
 }
 
+macro_rules! arith {
+    ($transform:expr, $instruction:expr, $computer:ident) => {
+        let storage_index = resolve_pointer($instruction.parameters[2], &$computer.relative_base);
+        let operand1 = resolve_value_in_memory(
+            $instruction.parameters[0],
+            &$computer.memory,
+            &$computer.relative_base,
+        );
+        let operand2 = resolve_value_in_memory(
+            $instruction.parameters[1],
+            &$computer.memory,
+            &$computer.relative_base,
+        );
+        $computer
+            .memory
+            .insert(storage_index, $transform(operand1, operand2));
+    };
+}
+
 impl IntCodeComputer {
     fn execute_instruction(&mut self, instruction: Instruction) {
         match instruction.operation {
             Operation::Add => {
-                arithmetic_operation(
-                    &instruction,
-                    &mut self.memory,
-                    &self.relative_base,
-                    Box::new(|x, y| x + y),
-                );
+                arith!(|x, y| x + y, instruction, self);
             }
             Operation::Multiply => {
-                arithmetic_operation(
-                    &instruction,
-                    &mut self.memory,
-                    &self.relative_base,
-                    Box::new(|x, y| x * y),
-                );
+                arith!(|x, y| x * y, instruction, self);
             }
             Operation::Input => {
                 if self.interrupted == Some(Interrupt::Input) || !self.input_buffer.is_empty() {
                     self.interrupted = None; // bug?
-                    let input_result = (self.input_buffer.pop_front())
+                    let input_result = self
+                        .input_buffer
+                        .pop_front()
                         .expect("input buffer empty after interrupt");
                     let storage_index =
                         resolve_pointer(instruction.parameters[0], &self.relative_base);
@@ -153,20 +164,10 @@ impl IntCodeComputer {
                 }
             }
             Operation::LessThan => {
-                arithmetic_operation(
-                    &instruction,
-                    &mut self.memory,
-                    &self.relative_base,
-                    Box::new(|x, y| if x < y { 1 } else { 0 }),
-                );
+                arith!(|x, y| if x < y { 1 } else { 0 }, instruction, self);
             }
             Operation::Equals => {
-                arithmetic_operation(
-                    &instruction,
-                    &mut self.memory,
-                    &self.relative_base,
-                    Box::new(|x, y| if x == y { 1 } else { 0 }),
-                );
+                arith!(|x, y| if x == y { 1 } else { 0 }, instruction, self);
             }
             Operation::AdjustRelativeBase => {
                 let delta_base = resolve_value_in_memory(
@@ -177,7 +178,6 @@ impl IntCodeComputer {
                 self.relative_base += delta_base;
             }
             Operation::Halt => {
-                // self.instruction_ptr = self.memory.len();
                 self.interrupted = Some(Interrupt::Halt);
                 return;
             }
@@ -188,20 +188,6 @@ impl IntCodeComputer {
     fn advance_instruction_pointer(&mut self, instruction: &Instruction) {
         self.instruction_ptr += 1 + instruction.operation.parameter_count();
     }
-}
-
-fn arithmetic_operation(
-    instruction: &Instruction,
-    memory: &mut InternalMemoryType,
-    relative_base: &IntcodeMemoryCellType,
-    transform: Box<
-        dyn FnOnce(IntcodeMemoryCellType, IntcodeMemoryCellType) -> IntcodeMemoryCellType,
-    >,
-) {
-    let storage_index = resolve_pointer(instruction.parameters[2], relative_base);
-    let operand1 = resolve_value_in_memory(instruction.parameters[0], &memory, relative_base);
-    let operand2 = resolve_value_in_memory(instruction.parameters[1], &memory, relative_base);
-    memory.insert(storage_index, transform(operand1, operand2));
 }
 
 fn resolve_value_in_memory(
