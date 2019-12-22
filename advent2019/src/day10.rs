@@ -108,7 +108,7 @@ fn find_visible_asteroids(asteroid: &Vec2D, set: &HashSet<Vec2D>) -> HashMap<Slo
             }
         };
         let should_replace_key = match slope_map.get(&key) {
-            Some(point) => asteroid.distance_between(candidate) < asteroid.distance_between(point),
+            Some(point) => asteroid.euclidean(candidate) < asteroid.euclidean(point),
             None => true,
         };
         if should_replace_key {

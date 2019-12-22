@@ -83,23 +83,9 @@ impl EmergencyPaintingRobot {
     }
 
     fn rotate(&mut self, direction: RotationDirection) {
-        let new_direction = match self.facing {
-            CardinalDirection::North => match direction {
-                RotationDirection::Left => CardinalDirection::West,
-                RotationDirection::Right => CardinalDirection::East,
-            },
-            CardinalDirection::East => match direction {
-                RotationDirection::Left => CardinalDirection::North,
-                RotationDirection::Right => CardinalDirection::South,
-            },
-            CardinalDirection::South => match direction {
-                RotationDirection::Left => CardinalDirection::East,
-                RotationDirection::Right => CardinalDirection::West,
-            },
-            CardinalDirection::West => match direction {
-                RotationDirection::Left => CardinalDirection::South,
-                RotationDirection::Right => CardinalDirection::North,
-            },
+        let new_direction = match direction {
+            RotationDirection::Left => self.facing.counter_clockwise(),
+            RotationDirection::Right => self.facing.clockwise(),
         };
         self.facing = new_direction;
     }

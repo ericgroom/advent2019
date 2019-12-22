@@ -8,9 +8,13 @@ pub struct Vec2D {
 }
 
 impl Vec2D {
-    pub fn distance_between(&self, other: &Self) -> f64 {
+    pub fn euclidean(&self, other: &Self) -> f64 {
         (((self.x - other.x) * (self.x - other.x) + (self.y - other.y) * (self.y - other.y)) as f64)
             .sqrt()
+    }
+
+    pub fn manhattan(&self, other: &Self) -> i32 {
+        (self.x - other.x).abs() + (self.y - other.y).abs()
     }
 
     pub fn new(x: i32, y: i32) -> Vec2D {
@@ -21,6 +25,14 @@ impl Vec2D {
 impl std::fmt::Debug for Vec2D {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "(x: {}, y: {})", self.x, self.y)
+    }
+}
+
+impl ops::Add for Vec2D {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        Vec2D::new(self.x + other.x, self.y + other.y)
     }
 }
 
@@ -51,11 +63,32 @@ impl ops::Add for Vec3D {
     }
 }
 
+#[derive(PartialEq, Eq, Clone, Copy)]
 pub enum CardinalDirection {
     North,
     East,
     South,
     West,
+}
+
+impl CardinalDirection {
+    pub fn clockwise(&self) -> CardinalDirection {
+        match &self {
+            Self::North => Self::East,
+            Self::East => Self::South,
+            Self::South => Self::West,
+            Self::West => Self::North,
+        }
+    }
+
+    pub fn counter_clockwise(&self) -> CardinalDirection {
+        match &self {
+            Self::North => Self::West,
+            Self::West => Self::South,
+            Self::South => Self::East,
+            Self::East => Self::North,
+        }
+    }
 }
 
 pub fn render_image(
