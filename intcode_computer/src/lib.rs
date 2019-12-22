@@ -8,13 +8,11 @@ mod sugar;
 use instruction::*;
 use operations::*;
 use parameter::*;
-use std::cell::{Cell, RefCell};
 use std::collections::{HashMap, VecDeque};
 
 pub trait Computer<MemoryType> {
-    /// returns false if the program has halted, if the value is true, there may be an interrupt
-    fn execute(&self) -> Interrupt;
-    fn step(&self);
+    fn execute(&mut self) -> Interrupt;
+    fn step(&mut self);
 }
 
 pub type IntcodeMemoryCellType = i64;
@@ -22,159 +20,173 @@ pub type IntcodeMemoryType = Vec<i64>;
 type InternalMemoryType = HashMap<usize, i64>;
 
 pub struct IntCodeComputer {
-    memory: RefCell<InternalMemoryType>,
-    instruction_ptr: Cell<usize>,
-    pub input_buffer: RefCell<VecDeque<IntcodeMemoryCellType>>,
-    output_buffer: RefCell<VecDeque<IntcodeMemoryCellType>>,
-    interrupted: Cell<Option<Interrupt>>,
-    relative_base: Cell<IntcodeMemoryCellType>,
+    memory: InternalMemoryType,
+    instruction_ptr: usize,
+    input_buffer: VecDeque<IntcodeMemoryCellType>,
+    output_buffer: VecDeque<IntcodeMemoryCellType>,
+    interrupted: Option<Interrupt>,
+    relative_base: IntcodeMemoryCellType,
 }
 
 impl IntCodeComputer {
     pub fn new(memory: Vec<IntcodeMemoryCellType>) -> IntCodeComputer {
         IntCodeComputer {
-            memory: RefCell::new(memory.into_iter().enumerate().collect()),
-            instruction_ptr: Cell::new(0),
-            input_buffer: RefCell::new(VecDeque::new()),
-            output_buffer: RefCell::new(VecDeque::new()),
-            interrupted: Cell::new(None),
-            relative_base: Cell::new(0),
+            memory: memory.into_iter().enumerate().collect(),
+            instruction_ptr: 0,
+            input_buffer: VecDeque::new(),
+            output_buffer: VecDeque::new(),
+            interrupted: None,
+            relative_base: 0,
         }
     }
 
-    pub fn provide_input(&self, input: IntcodeMemoryCellType) {
-        self.input_buffer.borrow_mut().push_back(input);
+    pub fn provide_input(&mut self, input: IntcodeMemoryCellType) {
+        self.input_buffer.push_back(input);
     }
 
-    pub fn take_output(&self) -> IntcodeMemoryCellType {
-        self.output_buffer.borrow_mut().pop_front().unwrap()
+    pub fn take_output(&mut self) -> IntcodeMemoryCellType {
+        self.output_buffer.pop_front().unwrap()
     }
 
-    pub fn terminate(self) -> IntcodeMemoryType {
+    pub fn terminate(mut self) -> IntcodeMemoryType {
         // TODO: insert blanks
-        let mut sorted_by_address: Vec<_> = self.memory.into_inner().drain().collect();
+        let mut sorted_by_address: Vec<_> = self.memory.drain().collect();
         sorted_by_address.sort_unstable_by_key(|(k, _)| *k);
         sorted_by_address.drain(..).map(|(_, v)| v).collect()
     }
 }
 
 impl<'a> Computer<IntcodeMemoryCellType> for IntCodeComputer {
-    fn execute(&self) -> Interrupt {
-        let memory_len = self.memory.borrow().len();
-        while self.instruction_ptr.get() < memory_len {
+    fn execute(&mut self) -> Interrupt {
+        let memory_len = self.memory.len();
+        while self.instruction_ptr < memory_len {
             self.step();
-            if let Some(interrupt) = self.interrupted.get() {
+            if let Some(interrupt) = self.interrupted {
                 return interrupt;
             }
         }
         return Interrupt::Halt;
     }
 
-    fn step(&self) {
-        let instruction = {
-            let memory = self.memory.borrow();
-            Instruction::read(&memory, &self.instruction_ptr.get())
-        };
+    fn step(&mut self) {
+        let instruction = Instruction::read(&self.memory, &self.instruction_ptr);
         self.execute_instruction(instruction);
     }
 }
 
 impl IntCodeComputer {
-    fn execute_instruction(&self, instruction: Instruction) {
-        let mut memory = self.memory.borrow_mut();
-        let relative_base = self.relative_base.get();
+    fn execute_instruction(&mut self, instruction: Instruction) {
         match instruction.operation {
             Operation::Add => {
                 arithmetic_operation(
                     &instruction,
-                    &mut memory,
-                    &relative_base,
+                    &mut self.memory,
+                    &self.relative_base,
                     Box::new(|x, y| x + y),
                 );
             }
             Operation::Multiply => {
                 arithmetic_operation(
                     &instruction,
-                    &mut memory,
-                    &relative_base,
+                    &mut self.memory,
+                    &self.relative_base,
                     Box::new(|x, y| x * y),
                 );
             }
             Operation::Input => {
-                if self.interrupted.get() == Some(Interrupt::Input)
-                    || !self.input_buffer.borrow().is_empty()
-                {
-                    self.interrupted.replace(None); // bug?
-                    let input_result = (self.input_buffer.borrow_mut().pop_front())
+                if self.interrupted == Some(Interrupt::Input) || !self.input_buffer.is_empty() {
+                    self.interrupted = None; // bug?
+                    let input_result = (self.input_buffer.pop_front())
                         .expect("input buffer empty after interrupt");
-                    let storage_index = resolve_pointer(instruction.parameters[0], &relative_base);
-                    memory.insert(storage_index, input_result);
+                    let storage_index =
+                        resolve_pointer(instruction.parameters[0], &self.relative_base);
+                    self.memory.insert(storage_index, input_result);
                 } else {
-                    self.interrupted.replace(Some(Interrupt::Input));
+                    self.interrupted = Some(Interrupt::Input);
                     return;
                 }
             }
             Operation::Output => {
-                if Some(Interrupt::Output) == self.interrupted.get() {
-                    self.interrupted.set(None);
+                if Some(Interrupt::Output) == self.interrupted {
+                    self.interrupted = None;
                 } else {
-                    let value =
-                        resolve_value_in_memory(instruction.parameters[0], &memory, &relative_base);
-                    self.output_buffer.borrow_mut().push_back(value);
-                    self.interrupted.replace(Some(Interrupt::Output));
+                    let value = resolve_value_in_memory(
+                        instruction.parameters[0],
+                        &self.memory,
+                        &self.relative_base,
+                    );
+                    self.output_buffer.push_back(value);
+                    self.interrupted = Some(Interrupt::Output);
                     return;
                 }
             }
             Operation::JumpIfTrue => {
-                if resolve_value_in_memory(instruction.parameters[0], &memory, &relative_base) != 0
+                if resolve_value_in_memory(
+                    instruction.parameters[0],
+                    &self.memory,
+                    &self.relative_base,
+                ) != 0
                 {
-                    let jump_address =
-                        resolve_value_in_memory(instruction.parameters[1], &memory, &relative_base);
-                    self.instruction_ptr.replace(jump_address as usize);
+                    let jump_address = resolve_value_in_memory(
+                        instruction.parameters[1],
+                        &self.memory,
+                        &self.relative_base,
+                    );
+                    self.instruction_ptr = jump_address as usize;
                     return;
                 }
             }
             Operation::JumpIfFalse => {
-                if resolve_value_in_memory(instruction.parameters[0], &memory, &relative_base) == 0
+                if resolve_value_in_memory(
+                    instruction.parameters[0],
+                    &self.memory,
+                    &self.relative_base,
+                ) == 0
                 {
-                    let jump_address =
-                        resolve_value_in_memory(instruction.parameters[1], &memory, &relative_base);
-                    self.instruction_ptr.replace(jump_address as usize);
+                    let jump_address = resolve_value_in_memory(
+                        instruction.parameters[1],
+                        &self.memory,
+                        &self.relative_base,
+                    );
+                    self.instruction_ptr = jump_address as usize;
                     return;
                 }
             }
             Operation::LessThan => {
                 arithmetic_operation(
                     &instruction,
-                    &mut memory,
-                    &relative_base,
+                    &mut self.memory,
+                    &self.relative_base,
                     Box::new(|x, y| if x < y { 1 } else { 0 }),
                 );
             }
             Operation::Equals => {
                 arithmetic_operation(
                     &instruction,
-                    &mut memory,
-                    &relative_base,
+                    &mut self.memory,
+                    &self.relative_base,
                     Box::new(|x, y| if x == y { 1 } else { 0 }),
                 );
             }
             Operation::AdjustRelativeBase => {
-                let delta_base =
-                    resolve_value_in_memory(instruction.parameters[0], &memory, &relative_base);
-                self.relative_base.set(delta_base + relative_base);
+                let delta_base = resolve_value_in_memory(
+                    instruction.parameters[0],
+                    &self.memory,
+                    &self.relative_base,
+                );
+                self.relative_base += delta_base;
             }
             Operation::Halt => {
-                //TODO: use set instead of replace everywhere
-                self.instruction_ptr.replace(memory.len());
-                self.interrupted.replace(Some(Interrupt::Halt));
+                // self.instruction_ptr = self.memory.len();
+                self.interrupted = Some(Interrupt::Halt);
                 return;
             }
         }
-        let old_ptr = self.instruction_ptr.get();
-        let new_ptr =
-            instruction.operation.parameter_count() + 1 + (old_ptr as IntcodeMemoryCellType);
-        self.instruction_ptr.replace(new_ptr as usize);
+        self.advance_instruction_pointer(&instruction);
+    }
+
+    fn advance_instruction_pointer(&mut self, instruction: &Instruction) {
+        self.instruction_ptr += 1 + instruction.operation.parameter_count();
     }
 }
 

@@ -11,7 +11,7 @@ fn get_amplifier_sequence_output(
     let mut input_signal = 0;
     for phase_setting in phase_settings.iter().cloned() {
         let memory = software.clone();
-        let computer = IntCodeComputer::new(memory);
+        let mut computer = IntCodeComputer::new(memory);
         computer.provide_input(phase_setting.into());
         computer.provide_input(input_signal);
         execute! { computer,
@@ -63,17 +63,17 @@ pub fn find_feedback_output(
     phase_settings: Vec<i32>,
 ) -> IntcodeMemoryCellType {
     let pipe = Pipe::new();
-    let amps: Vec<IntCodeComputer> = phase_settings
+    let mut amps: Vec<IntCodeComputer> = phase_settings
         .iter()
         .map(|_| IntCodeComputer::new(software.clone()))
         .collect();
-    for (amp, phase) in amps.iter().zip(phase_settings.iter()) {
+    for (amp, phase) in amps.iter_mut().zip(phase_settings.iter()) {
         amp.provide_input((*phase).into());
     }
     amps[0].provide_input(0);
     let mut halt_count = 0;
     while halt_count < amps.len() {
-        for amp in &amps {
+        for amp in amps.iter_mut() {
             if !pipe.is_empty() {
                 let input = pipe.receive();
                 amp.provide_input(input.into());

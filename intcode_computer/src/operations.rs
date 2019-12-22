@@ -51,7 +51,7 @@ impl Into<IntcodeMemoryCellType> for Operation {
 }
 
 impl Operation {
-    pub fn parameter_count(&self) -> IntcodeMemoryCellType {
+    pub fn parameter_count(&self) -> usize {
         match *self {
             Self::Add => 3,
             Self::Multiply => 3,

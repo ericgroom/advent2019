@@ -92,7 +92,7 @@ impl EmergencyPaintingRobot {
 
 fn take_the_robot_for_a_walk(software: IntcodeMemoryType, hull: ShipHull) -> ShipHull {
     let mut output_buffer: VecDeque<IntcodeMemoryCellType> = VecDeque::new();
-    let computer = IntCodeComputer::new(software);
+    let mut computer = IntCodeComputer::new(software);
     let mut robot = EmergencyPaintingRobot::new();
     let mut hull = hull;
 

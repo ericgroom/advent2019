@@ -43,7 +43,7 @@ fn get_test_input() -> IntcodeMemoryType {
 
 fn run_game(game: IntcodeMemoryType) -> IntcodeMemoryType {
     let mut outputs = Vec::new();
-    let computer = IntCodeComputer::new(game);
+    let mut computer = IntCodeComputer::new(game);
     execute! { computer,
         output { outputs.push(computer.take_output()) }
     }
@@ -87,7 +87,7 @@ pub fn play_game() -> i64 {
     let mut game = get_test_input();
     game[0] = 2;
     let mut outputs = Vec::new();
-    let computer = IntCodeComputer::new(game);
+    let mut computer = IntCodeComputer::new(game);
     let mut total_score = 0;
     let mut screen = HashMap::new();
 

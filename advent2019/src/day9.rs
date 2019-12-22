@@ -8,9 +8,9 @@ fn get_test_input() -> IntcodeMemoryType {
 pub fn run_boost_diagnostic() -> IntcodeMemoryCellType {
     let memory = get_test_input();
     let mut outputs = Vec::new();
-    let computer = IntCodeComputer::new(memory);
+    let mut computer = IntCodeComputer::new(memory);
     computer.provide_input(1);
-    execute! {computer,
+    execute! { computer,
         output { outputs.push(computer.take_output()) }
     }
     match &outputs[..] {
@@ -22,7 +22,7 @@ pub fn run_boost_diagnostic() -> IntcodeMemoryCellType {
 pub fn get_distress_signal_coords() -> IntcodeMemoryCellType {
     let memory = get_test_input();
     let mut output = 0;
-    let computer = IntCodeComputer::new(memory);
+    let mut computer = IntCodeComputer::new(memory);
     computer.provide_input(2);
     execute! { computer,
         output { output = computer.take_output() }
@@ -42,7 +42,7 @@ mod tests {
         let program_copy = program.clone();
 
         let mut outputs = Vec::new();
-        let computer = IntCodeComputer::new(program);
+        let mut computer = IntCodeComputer::new(program);
         execute! { computer,
             output { outputs.push(computer.take_output()) }
         }
@@ -53,7 +53,7 @@ mod tests {
     fn test_large_output() {
         let program = vec![1102, 34915192, 34915192, 7, 4, 7, 99, 0];
         let mut output = 0;
-        let computer = IntCodeComputer::new(program);
+        let mut computer = IntCodeComputer::new(program);
         execute! { computer,
             output { output = computer.take_output() }
         }
@@ -70,7 +70,7 @@ mod tests {
     fn test_large_output_in_middle() {
         let program = vec![104, 1125899906842624, 99];
         let mut output = 0;
-        let computer = IntCodeComputer::new(program);
+        let mut computer = IntCodeComputer::new(program);
         execute! { computer,
             output { output = computer.take_output() }
         }
