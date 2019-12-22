@@ -2,6 +2,8 @@ pub mod instruction;
 pub mod operations;
 pub mod parameter;
 pub mod pipe;
+pub mod prelude;
+mod sugar;
 
 use instruction::*;
 use operations::*;
@@ -11,34 +13,31 @@ use std::collections::{HashMap, VecDeque};
 
 pub trait Computer<MemoryType> {
     /// returns false if the program has halted, if the value is true, there may be an interrupt
-    fn execute(&self) -> bool;
-    fn step(&self) -> bool;
+    fn execute(&self) -> Interrupt;
+    fn step(&self);
 }
 
 pub type IntcodeMemoryCellType = i64;
 pub type IntcodeMemoryType = Vec<i64>;
 type InternalMemoryType = HashMap<usize, i64>;
 
-pub struct IntCodeComputer<'a> {
+pub struct IntCodeComputer {
     memory: RefCell<InternalMemoryType>,
     instruction_ptr: Cell<usize>,
-    input_buffer: RefCell<VecDeque<IntcodeMemoryCellType>>,
-    output_callback: &'a dyn Fn(IntcodeMemoryCellType),
-    interupted: Cell<bool>,
+    pub input_buffer: RefCell<VecDeque<IntcodeMemoryCellType>>,
+    output_buffer: RefCell<VecDeque<IntcodeMemoryCellType>>,
+    interrupted: Cell<Option<Interrupt>>,
     relative_base: Cell<IntcodeMemoryCellType>,
 }
 
-impl<'a> IntCodeComputer<'a> {
-    pub fn new(
-        memory: Vec<IntcodeMemoryCellType>,
-        output: &'a dyn Fn(IntcodeMemoryCellType),
-    ) -> IntCodeComputer<'a> {
+impl IntCodeComputer {
+    pub fn new(memory: Vec<IntcodeMemoryCellType>) -> IntCodeComputer {
         IntCodeComputer {
             memory: RefCell::new(memory.into_iter().enumerate().collect()),
             instruction_ptr: Cell::new(0),
             input_buffer: RefCell::new(VecDeque::new()),
-            output_callback: output,
-            interupted: Cell::new(false),
+            output_buffer: RefCell::new(VecDeque::new()),
+            interrupted: Cell::new(None),
             relative_base: Cell::new(0),
         }
     }
@@ -47,37 +46,41 @@ impl<'a> IntCodeComputer<'a> {
         self.input_buffer.borrow_mut().push_back(input);
     }
 
+    pub fn take_output(&self) -> IntcodeMemoryCellType {
+        self.output_buffer.borrow_mut().pop_front().unwrap()
+    }
+
     pub fn terminate(self) -> IntcodeMemoryType {
+        // TODO: insert blanks
         let mut sorted_by_address: Vec<_> = self.memory.into_inner().drain().collect();
         sorted_by_address.sort_unstable_by_key(|(k, _)| *k);
         sorted_by_address.drain(..).map(|(_, v)| v).collect()
     }
 }
 
-impl<'a> Computer<IntcodeMemoryCellType> for IntCodeComputer<'a> {
-    fn execute(&self) -> bool {
+impl<'a> Computer<IntcodeMemoryCellType> for IntCodeComputer {
+    fn execute(&self) -> Interrupt {
         let memory_len = self.memory.borrow().len();
         while self.instruction_ptr.get() < memory_len {
             self.step();
-            if self.interupted.get() {
-                return true;
+            if let Some(interrupt) = self.interrupted.get() {
+                return interrupt;
             }
         }
-        return false;
+        return Interrupt::Halt;
     }
 
-    fn step(&self) -> bool {
+    fn step(&self) {
         let instruction = {
             let memory = self.memory.borrow();
             Instruction::read(&memory, &self.instruction_ptr.get())
         };
-        self.execute_instruction(instruction)
+        self.execute_instruction(instruction);
     }
 }
 
-impl<'a> IntCodeComputer<'a> {
-    /// returns true if halted, false otherwise
-    fn execute_instruction(&self, instruction: Instruction) -> bool {
+impl IntCodeComputer {
+    fn execute_instruction(&self, instruction: Instruction) {
         let mut memory = self.memory.borrow_mut();
         let relative_base = self.relative_base.get();
         match instruction.operation {
@@ -98,21 +101,29 @@ impl<'a> IntCodeComputer<'a> {
                 );
             }
             Operation::Input => {
-                if self.interupted.get() || !self.input_buffer.borrow().is_empty() {
-                    self.interupted.replace(false);
+                if self.interrupted.get() == Some(Interrupt::Input)
+                    || !self.input_buffer.borrow().is_empty()
+                {
+                    self.interrupted.replace(None); // bug?
                     let input_result = (self.input_buffer.borrow_mut().pop_front())
                         .expect("input buffer empty after interrupt");
                     let storage_index = resolve_pointer(instruction.parameters[0], &relative_base);
                     memory.insert(storage_index, input_result);
                 } else {
-                    self.interupted.replace(true);
-                    return false;
+                    self.interrupted.replace(Some(Interrupt::Input));
+                    return;
                 }
             }
             Operation::Output => {
-                let value =
-                    resolve_value_in_memory(instruction.parameters[0], &memory, &relative_base);
-                (self.output_callback)(value);
+                if Some(Interrupt::Output) == self.interrupted.get() {
+                    self.interrupted.set(None);
+                } else {
+                    let value =
+                        resolve_value_in_memory(instruction.parameters[0], &memory, &relative_base);
+                    self.output_buffer.borrow_mut().push_back(value);
+                    self.interrupted.replace(Some(Interrupt::Output));
+                    return;
+                }
             }
             Operation::JumpIfTrue => {
                 if resolve_value_in_memory(instruction.parameters[0], &memory, &relative_base) != 0
@@ -120,7 +131,7 @@ impl<'a> IntCodeComputer<'a> {
                     let jump_address =
                         resolve_value_in_memory(instruction.parameters[1], &memory, &relative_base);
                     self.instruction_ptr.replace(jump_address as usize);
-                    return false;
+                    return;
                 }
             }
             Operation::JumpIfFalse => {
@@ -129,7 +140,7 @@ impl<'a> IntCodeComputer<'a> {
                     let jump_address =
                         resolve_value_in_memory(instruction.parameters[1], &memory, &relative_base);
                     self.instruction_ptr.replace(jump_address as usize);
-                    return false;
+                    return;
                 }
             }
             Operation::LessThan => {
@@ -156,14 +167,14 @@ impl<'a> IntCodeComputer<'a> {
             Operation::Halt => {
                 //TODO: use set instead of replace everywhere
                 self.instruction_ptr.replace(memory.len());
-                return true;
+                self.interrupted.replace(Some(Interrupt::Halt));
+                return;
             }
         }
         let old_ptr = self.instruction_ptr.get();
         let new_ptr =
             instruction.operation.parameter_count() + 1 + (old_ptr as IntcodeMemoryCellType);
         self.instruction_ptr.replace(new_ptr as usize);
-        false
     }
 }
 
@@ -225,6 +236,22 @@ impl Instruction {
         Instruction {
             operation: operation,
             parameters: parameters,
+        }
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Interrupt {
+    Input,
+    Output,
+    Halt,
+}
+
+impl Interrupt {
+    pub fn is_halted(&self) -> bool {
+        match self {
+            Self::Halt => true,
+            _ => false,
         }
     }
 }

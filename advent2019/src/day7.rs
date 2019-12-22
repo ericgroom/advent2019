@@ -1,7 +1,6 @@
 use crate::utils::read::read_list;
 use intcode_computer::pipe::Pipe;
-use intcode_computer::{Computer, IntCodeComputer, IntcodeMemoryCellType, IntcodeMemoryType};
-use std::cell::Cell;
+use intcode_computer::prelude::*;
 
 fn get_amplifier_sequence_output(
     software: &IntcodeMemoryType,
@@ -9,20 +8,17 @@ fn get_amplifier_sequence_output(
 ) -> IntcodeMemoryCellType {
     // first amp only: input signal 0
     // every amp: phase setting then input signal, outputs output signal
-    let input_signal = Cell::new(0);
+    let mut input_signal = 0;
     for phase_setting in phase_settings.iter().cloned() {
         let memory = software.clone();
-        let output_callback = |x| {
-            input_signal.replace(x);
-        };
-        let computer = IntCodeComputer::new(memory, &output_callback);
+        let computer = IntCodeComputer::new(memory);
         computer.provide_input(phase_setting.into());
-        computer.provide_input(input_signal.get());
-        while computer.execute() {
-            println!("interupted")
+        computer.provide_input(input_signal);
+        execute! { computer,
+            output { input_signal = computer.take_output() }
         }
     }
-    input_signal.get()
+    input_signal
 }
 
 fn get_permutations<T: Copy>(list: Vec<T>) -> Vec<Vec<T>> {
@@ -67,10 +63,9 @@ pub fn find_feedback_output(
     phase_settings: Vec<i32>,
 ) -> IntcodeMemoryCellType {
     let pipe = Pipe::new();
-    let output = |x| pipe.send(x);
     let amps: Vec<IntCodeComputer> = phase_settings
         .iter()
-        .map(|_| IntCodeComputer::new(software.clone(), &output))
+        .map(|_| IntCodeComputer::new(software.clone()))
         .collect();
     for (amp, phase) in amps.iter().zip(phase_settings.iter()) {
         amp.provide_input((*phase).into());
@@ -83,9 +78,16 @@ pub fn find_feedback_output(
                 let input = pipe.receive();
                 amp.provide_input(input.into());
             }
-            let has_halted = !amp.execute();
-            if has_halted {
-                halt_count += 1
+            loop {
+                let interrupt = amp.execute();
+                match interrupt {
+                    Interrupt::Output => pipe.send(amp.take_output()),
+                    Interrupt::Halt => {
+                        halt_count += 1;
+                        break;
+                    }
+                    Interrupt::Input => break,
+                };
             }
         }
     }

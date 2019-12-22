@@ -1,8 +1,7 @@
 use crate::utils::geometry::{convert_map_to_grid, render_image};
 use crate::utils::geometry::{CardinalDirection, Vec2D};
 use crate::utils::read::read_list;
-use intcode_computer::{Computer, IntCodeComputer, IntcodeMemoryCellType, IntcodeMemoryType};
-use std::cell::RefCell;
+use intcode_computer::prelude::*;
 use std::collections::{HashMap, VecDeque};
 
 #[derive(Debug, Clone, Copy)]
@@ -92,32 +91,34 @@ impl EmergencyPaintingRobot {
 }
 
 fn take_the_robot_for_a_walk(software: IntcodeMemoryType, hull: ShipHull) -> ShipHull {
-    let output_buffer = RefCell::new(VecDeque::new());
-    let output_handler = |i| output_buffer.borrow_mut().push_back(i);
-    let computer = IntCodeComputer::new(software, &output_handler);
+    let mut output_buffer: VecDeque<IntcodeMemoryCellType> = VecDeque::new();
+    let computer = IntCodeComputer::new(software);
     let mut robot = EmergencyPaintingRobot::new();
     let mut hull = hull;
 
     let current_color = hull.get_color(&robot.location);
     computer.provide_input((*current_color).into());
-    while computer.execute() {
-        let mut output_buffer_m = output_buffer.borrow_mut();
-        assert_eq!(output_buffer_m.len(), 2);
-        let color_to_paint: Color = output_buffer_m.pop_front().unwrap().into();
-        let direction_to_turn: RotationDirection = match output_buffer_m.pop_front().unwrap() {
-            0 => RotationDirection::Left,
-            1 => RotationDirection::Right,
-            _ => panic!("invalid direction to turn"),
-        };
-
-        hull.paint(robot.location, color_to_paint);
-        robot.rotate(direction_to_turn);
-        robot.advance();
-
-        // for next iter
-        let current_color = hull.get_color(&robot.location);
-        computer.provide_input((*current_color).into());
-    }
+    execute! { computer,
+        output {
+            output_buffer.push_back(computer.take_output());
+        },
+        input {
+            assert_eq!(output_buffer.len(), 2);
+            let color_to_paint: Color = output_buffer.pop_front().unwrap().into();
+            let direction_to_turn: RotationDirection = match output_buffer.pop_front().unwrap()
+            {
+                0 => RotationDirection::Left,
+                1 => RotationDirection::Right,
+                _ => panic!("invalid direction to turn"),
+            };
+            hull.paint(robot.location, color_to_paint);
+            robot.rotate(direction_to_turn);
+            robot.advance();
+            // for next iter
+            let current_color = hull.get_color(&robot.location);
+            computer.provide_input((*current_color).into());
+        }
+    };
     hull
 }
 

@@ -1,9 +1,9 @@
 use crate::utils::read::read_list;
-use intcode_computer::{Computer, IntCodeComputer, IntcodeMemoryCellType, IntcodeMemoryType};
+use intcode_computer::prelude::*;
 
 pub fn run_computation(input: IntcodeMemoryType) -> IntcodeMemoryType {
-    let computer = IntCodeComputer::new(input, &|_| panic!("output not implemented"));
-    while computer.execute() {}
+    let computer = IntCodeComputer::new(input);
+    execute!(computer);
     computer.terminate()
 }
 

@@ -1,7 +1,6 @@
 use crate::utils::geometry::{convert_map_to_grid, render_image, Vec2D};
 use crate::utils::read::read_list;
-use intcode_computer::{Computer, IntCodeComputer, IntcodeMemoryType};
-use std::cell::RefCell;
+use intcode_computer::prelude::*;
 use std::collections::HashMap;
 
 #[derive(PartialEq, Eq, Clone, Copy)]
@@ -43,12 +42,12 @@ fn get_test_input() -> IntcodeMemoryType {
 }
 
 fn run_game(game: IntcodeMemoryType) -> IntcodeMemoryType {
-    let output_container = RefCell::new(Vec::new());
-    let output_handle = |i| output_container.borrow_mut().push(i);
-    let computer = IntCodeComputer::new(game, &output_handle);
-    let has_halted = !computer.execute();
-    assert!(has_halted);
-    output_container.into_inner()
+    let mut outputs = Vec::new();
+    let computer = IntCodeComputer::new(game);
+    execute! { computer,
+        output { outputs.push(computer.take_output()) }
+    }
+    outputs
 }
 
 pub fn count_blocks() -> usize {
@@ -87,40 +86,38 @@ const PRINT_FRAMES: bool = false;
 pub fn play_game() -> i64 {
     let mut game = get_test_input();
     game[0] = 2;
-    let output_container = RefCell::new(Vec::new());
-    let output_handle = |i| output_container.borrow_mut().push(i);
-    let computer = IntCodeComputer::new(game, &output_handle);
+    let mut outputs = Vec::new();
+    let computer = IntCodeComputer::new(game);
     let mut total_score = 0;
     let mut screen = HashMap::new();
 
-    while computer.execute() {
-        let mut output = output_container.borrow_mut();
-        assert!(!output.is_empty());
-        let (score, mut map) = output_to_map(&mut output);
-        screen.extend(map.drain());
-        total_score = score;
-        let convert_entity = |entity| Into::<i64>::into(entity) as i32;
-        let (width, grid) = convert_map_to_grid(&screen, 0, Box::new(convert_entity));
-        let ball = find_first(&grid, width, 4);
-        let puck = find_first(&grid, width, 3);
-        if ball.x == puck.x {
-            computer.provide_input(0);
-        } else if ball.x < puck.x {
-            computer.provide_input(-1);
-        } else {
-            computer.provide_input(1);
+    execute! { computer,
+        output {
+            outputs.push(computer.take_output());
+            if outputs.len() % 3 == 0 {
+                let (score, mut map) = output_to_map(&mut outputs);
+                screen.extend(map.drain());
+                total_score = score;
+            }
+        },
+        input {
+            let convert_entity = |entity| Into::<i64>::into(entity) as i32;
+            let (width, grid) = convert_map_to_grid(&screen, 0, Box::new(convert_entity));
+            let ball = find_first(&grid, width, 4);
+            let puck = find_first(&grid, width, 3);
+            if ball.x == puck.x {
+                computer.provide_input(0);
+            } else if ball.x < puck.x {
+                computer.provide_input(-1);
+            } else {
+                computer.provide_input(1);
+            }
+            if PRINT_FRAMES {
+                let frame = render_image(grid, width, Box::new(render_pixel));
+                print!("{}", frame);
+                std::thread::sleep(std::time::Duration::from_millis(1000 / 60));
+            }
         }
-        if PRINT_FRAMES {
-            let frame = render_image(grid, width, Box::new(render_pixel));
-            print!("{}", frame);
-            std::thread::sleep(std::time::Duration::from_millis(1000 / 60));
-        }
-    }
-    // TODO refactor once computer doesn't take closure for output
-    let mut output = output_container.borrow_mut();
-    if !output.is_empty() {
-        let (score, _) = output_to_map(&mut output);
-        total_score = score;
     }
     total_score
 }
