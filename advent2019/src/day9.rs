@@ -7,8 +7,7 @@ fn get_test_input() -> IntcodeMemoryType {
 }
 
 pub fn run_boost_diagnostic() -> IntcodeMemoryCellType {
-    let mut memory = get_test_input();
-    memory.resize(memory.len() + 256, 0);
+    let memory = get_test_input();
     let output_container = RefCell::new(Vec::new());
     let output_handle = |i| output_container.borrow_mut().push(i);
     let computer = IntCodeComputer::new(memory, &output_handle);
@@ -22,8 +21,7 @@ pub fn run_boost_diagnostic() -> IntcodeMemoryCellType {
 }
 
 pub fn get_distress_signal_coords() -> IntcodeMemoryCellType {
-    let mut memory = get_test_input();
-    memory.resize(memory.len() + 256, 0);
+    let memory = get_test_input();
     let output_container = Cell::new(0);
     let output_handle = |i| output_container.set(i);
     let computer = IntCodeComputer::new(memory, &output_handle);
@@ -39,12 +37,11 @@ mod tests {
 
     #[test]
     fn test_relative_mode() {
-        let mut program = vec![
+        let program = vec![
             109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99,
         ];
         let program_copy = program.clone();
 
-        program.resize(program.len() + 256, 0);
         let output_container = RefCell::new(Vec::new());
         let output_handle = |i| output_container.borrow_mut().push(i);
         let computer = IntCodeComputer::new(program, &output_handle);

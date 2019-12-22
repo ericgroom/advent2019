@@ -52,8 +52,7 @@ fn run_game(game: IntcodeMemoryType) -> IntcodeMemoryType {
 }
 
 pub fn count_blocks() -> usize {
-    let mut input = get_test_input();
-    input.resize(3000, 0);
+    let input = get_test_input();
     let mut computer_output = run_game(input);
     let (_, map) = output_to_map(&mut computer_output);
     map.values()
@@ -87,7 +86,6 @@ fn output_to_map(output: &mut IntcodeMemoryType) -> (i64, HashMap<Vec2D, Entity>
 const PRINT_FRAMES: bool = false;
 pub fn play_game() -> i64 {
     let mut game = get_test_input();
-    game.resize(3000, 0);
     game[0] = 2;
     let output_container = RefCell::new(Vec::new());
     let output_handle = |i| output_container.borrow_mut().push(i);

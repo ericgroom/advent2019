@@ -126,16 +126,14 @@ fn get_test_input() -> IntcodeMemoryType {
 }
 
 pub fn get_coverage() -> usize {
-    let mut software = get_test_input();
-    software.resize(2000, 0);
+    let software = get_test_input();
     let hull = take_the_robot_for_a_walk(software, ShipHull::new());
     hull.position_color_map.len()
 }
 
 pub fn get_registration_identifier() -> String {
     let mut hull = ShipHull::new();
-    let mut software = get_test_input();
-    software.resize(2000, 0);
+    let software = get_test_input();
     hull.paint(Vec2D::new(0, 0), Color::White);
     let painted_hull = take_the_robot_for_a_walk(software, hull);
     let convert_color = |color| Into::<i64>::into(color) as i32;

@@ -7,7 +7,7 @@ use instruction::*;
 use operations::*;
 use parameter::*;
 use std::cell::{Cell, RefCell};
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 
 pub trait Computer<MemoryType> {
     /// returns false if the program has halted, if the value is true, there may be an interrupt
@@ -17,9 +17,10 @@ pub trait Computer<MemoryType> {
 
 pub type IntcodeMemoryCellType = i64;
 pub type IntcodeMemoryType = Vec<i64>;
+type InternalMemoryType = HashMap<usize, i64>;
 
 pub struct IntCodeComputer<'a> {
-    memory: RefCell<IntcodeMemoryType>,
+    memory: RefCell<InternalMemoryType>,
     instruction_ptr: Cell<usize>,
     input_buffer: RefCell<VecDeque<IntcodeMemoryCellType>>,
     output_callback: &'a dyn Fn(IntcodeMemoryCellType),
@@ -29,11 +30,11 @@ pub struct IntCodeComputer<'a> {
 
 impl<'a> IntCodeComputer<'a> {
     pub fn new(
-        memory: IntcodeMemoryType,
+        memory: Vec<IntcodeMemoryCellType>,
         output: &'a dyn Fn(IntcodeMemoryCellType),
     ) -> IntCodeComputer<'a> {
         IntCodeComputer {
-            memory: RefCell::new(memory),
+            memory: RefCell::new(memory.into_iter().enumerate().collect()),
             instruction_ptr: Cell::new(0),
             input_buffer: RefCell::new(VecDeque::new()),
             output_callback: output,
@@ -47,7 +48,9 @@ impl<'a> IntCodeComputer<'a> {
     }
 
     pub fn terminate(self) -> IntcodeMemoryType {
-        self.memory.into_inner()
+        let mut sorted_by_address: Vec<_> = self.memory.into_inner().drain().collect();
+        sorted_by_address.sort_unstable_by_key(|(k, _)| *k);
+        sorted_by_address.drain(..).map(|(_, v)| v).collect()
     }
 }
 
@@ -100,7 +103,7 @@ impl<'a> IntCodeComputer<'a> {
                     let input_result = (self.input_buffer.borrow_mut().pop_front())
                         .expect("input buffer empty after interrupt");
                     let storage_index = resolve_pointer(instruction.parameters[0], &relative_base);
-                    memory[storage_index] = input_result;
+                    memory.insert(storage_index, input_result);
                 } else {
                     self.interupted.replace(true);
                     return false;
@@ -166,7 +169,7 @@ impl<'a> IntCodeComputer<'a> {
 
 fn arithmetic_operation(
     instruction: &Instruction,
-    memory: &mut IntcodeMemoryType,
+    memory: &mut InternalMemoryType,
     relative_base: &IntcodeMemoryCellType,
     transform: Box<
         dyn FnOnce(IntcodeMemoryCellType, IntcodeMemoryCellType) -> IntcodeMemoryCellType,
@@ -175,17 +178,20 @@ fn arithmetic_operation(
     let storage_index = resolve_pointer(instruction.parameters[2], relative_base);
     let operand1 = resolve_value_in_memory(instruction.parameters[0], &memory, relative_base);
     let operand2 = resolve_value_in_memory(instruction.parameters[1], &memory, relative_base);
-    memory[storage_index] = transform(operand1, operand2);
+    memory.insert(storage_index, transform(operand1, operand2));
 }
 
 fn resolve_value_in_memory(
     parameter: Parameter,
-    memory: &IntcodeMemoryType,
+    memory: &InternalMemoryType,
     relative_base: &IntcodeMemoryCellType,
 ) -> IntcodeMemoryCellType {
     match parameter {
         Parameter::Value(value) => value,
-        pointer => memory[resolve_pointer(pointer, relative_base)],
+        pointer => memory
+            .get(&resolve_pointer(pointer, relative_base))
+            .copied()
+            .unwrap_or_default(),
     }
 }
 
@@ -198,23 +204,21 @@ fn resolve_pointer(parameter: Parameter, relative_base: &IntcodeMemoryCellType) 
 }
 
 impl Instruction {
-    fn read(memory: &IntcodeMemoryType, instruction_ptr: &usize) -> Instruction {
-        let mut iter = memory[*instruction_ptr..].iter();
-        let opcode = iter.next().expect("Cannot read from empty memory");
+    fn read(memory: &InternalMemoryType, instruction_ptr: &usize) -> Instruction {
+        let opcode = memory[instruction_ptr];
         let OpCode {
             operation,
             parameter_modes,
-        } = OpCode::from(*opcode);
+        } = OpCode::from(opcode);
         let mut parameters: Vec<Parameter> = Vec::new();
         for i in 0..operation.parameter_count() {
             let mode = parameter_modes[i as usize];
-            let value = iter
-                .next()
-                .expect("Not enough values in memory to process instruction");
+            let address = *instruction_ptr + i as usize + 1;
+            let value = memory[&address];
             let parameter = match mode {
-                ParameterMode::Pointer => Parameter::Pointer(*value as usize),
-                ParameterMode::Value => Parameter::Value(*value),
-                ParameterMode::Relative => Parameter::Relative(*value),
+                ParameterMode::Pointer => Parameter::Pointer(value as usize),
+                ParameterMode::Value => Parameter::Value(value),
+                ParameterMode::Relative => Parameter::Relative(value),
             };
             parameters.push(parameter);
         }
