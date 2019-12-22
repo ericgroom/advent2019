@@ -4,7 +4,7 @@ use intcode_computer::{Computer, IntCodeComputer, IntcodeMemoryCellType, Intcode
 pub fn run_computation(input: IntcodeMemoryType) -> IntcodeMemoryType {
     let computer = IntCodeComputer::new(input, &|_| panic!("output not implemented"));
     while computer.execute() {}
-    computer.memory.into_inner()
+    computer.terminate()
 }
 
 fn read_input_from_file() -> IntcodeMemoryType {

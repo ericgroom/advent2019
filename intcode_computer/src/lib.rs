@@ -19,7 +19,7 @@ pub type IntcodeMemoryCellType = i64;
 pub type IntcodeMemoryType = Vec<i64>;
 
 pub struct IntCodeComputer<'a> {
-    pub memory: RefCell<IntcodeMemoryType>,
+    memory: RefCell<IntcodeMemoryType>,
     instruction_ptr: Cell<usize>,
     input_buffer: RefCell<VecDeque<IntcodeMemoryCellType>>,
     output_callback: &'a dyn Fn(IntcodeMemoryCellType),
