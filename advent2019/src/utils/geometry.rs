@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::ops;
+use std::slice::Iter;
 
 #[derive(PartialEq, Eq, Copy, Clone, Hash, Default)]
 pub struct Vec2D {
@@ -63,7 +64,7 @@ impl ops::Add for Vec3D {
     }
 }
 
-#[derive(PartialEq, Eq, Clone, Copy)]
+#[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub enum CardinalDirection {
     North,
     East,
@@ -88,6 +89,11 @@ impl CardinalDirection {
             Self::South => Self::East,
             Self::East => Self::North,
         }
+    }
+
+    pub fn iterator() -> Iter<'static, CardinalDirection> {
+        static ALL: [CardinalDirection; 4] = [CardinalDirection::North, CardinalDirection::West, CardinalDirection::South, CardinalDirection::East];
+        ALL.iter()
     }
 }
 

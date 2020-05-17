@@ -5,6 +5,7 @@ mod day12;
 mod day13;
 mod day14;
 mod day16;
+mod day17;
 mod day2;
 mod day3;
 mod day4;
@@ -80,4 +81,5 @@ fn main() {
         "Fuel producible from 1 trillion ore: {}",
         day14::find_fuel_producible_from_1_trillion_ore()
     );
+    println!("Alignment parameter: {}", day17::calculate_alignment_param())
 }
